@@ -96,8 +96,10 @@ Environment (optional overrides in parent `.env`):
 
 ## Quick Start (local)
 
+**GitHub mirror:**
+
 ```bash
-git clone http://5.129.212.122/Superowner/alien-monitor.git
+git clone https://github.com/alexar76/alien-monitor.git
 cd alien-monitor
 
 # Virtual Universe mode (embedded blockchain + entities)
@@ -108,6 +110,8 @@ cd alien-monitor
 
 # Open: http://localhost:5173
 ```
+
+**Monorepo (canonical source):** edit `aicom/alien-monitor/`, publish with `./scripts/publish_all_repos.sh --satellite alien-monitor`.
 
 ## Universe Mode API
 
