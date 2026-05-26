@@ -11,6 +11,12 @@ export function useWebSocket(
   modeRef.current = mode;
 
   useEffect(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ cmd: 'set_mode', mode }));
+    }
+  }, [mode]);
+
+  useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
     const wsUrl = `${protocol}//${window.location.host}${basePath}/ws`;

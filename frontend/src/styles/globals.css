@@ -13,6 +13,15 @@
   --alien-red: #ff3355;
   --alien-purple: #7b2fff;
   --alien-blue: #3366ff;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -21,11 +30,20 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  min-height: 100vh;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -40,11 +58,49 @@ body {
 
 /* Glass panel effect */
 .glass-panel {
-  background: rgba(13, 17, 23, 0.85);
+  background: rgba(13, 17, 23, 0.88);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--alien-border);
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mobile-sheet {
+  border-radius: 16px 16px 0 0;
+  padding-bottom: max(0.75rem, var(--safe-bottom));
+}
+
+@media (min-width: 768px) {
+  .mobile-sheet {
+    border-radius: 12px;
+    padding-bottom: inherit;
+  }
+}
+
+.mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.metrics-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.metrics-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.controls-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.controls-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* Neon text glow */
@@ -58,14 +114,12 @@ body {
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.6), 0 0 20px rgba(0, 255, 136, 0.3);
 }
 
-/* Pulsing ring animation for nodes */
 @keyframes pulse-ring {
   0% { transform: scale(0.8); opacity: 0.8; }
   50% { transform: scale(1.4); opacity: 0.2; }
   100% { transform: scale(0.8); opacity: 0.8; }
 }
 
-/* Scan line effect */
 .scan-line {
   position: absolute;
   width: 100%;
@@ -80,7 +134,6 @@ body {
   100% { top: 100%; }
 }
 
-/* Grid background */
 .grid-bg {
   background-image:
     linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
@@ -88,7 +141,6 @@ body {
   background-size: 40px 40px;
 }
 
-/* Data rain */
 @keyframes dataRain {
   0% { transform: translateY(-100%); opacity: 0; }
   10% { opacity: 1; }
@@ -96,7 +148,6 @@ body {
   100% { transform: translateY(100vh); opacity: 0; }
 }
 
-/* Node hover tooltip */
 .node-tooltip {
   position: absolute;
   pointer-events: none;
@@ -108,10 +159,9 @@ body {
   color: #fff;
   box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
   z-index: 100;
-  max-width: 250px;
+  max-width: min(250px, 90vw);
 }
 
-/* Transaction item animation */
 @keyframes slideIn {
   from { transform: translateX(-20px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -120,7 +170,14 @@ body {
   animation: slideIn 0.3s ease-out;
 }
 
-/* AI chat typing indicator */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slideUp 0.28s ease-out;
+}
+
 @keyframes typing {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }

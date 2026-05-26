@@ -76,6 +76,10 @@ export interface EcosystemState {
 
 type MonitorMode = 'test' | 'real' | 'universe';
 
+function isMonitorMode(v: string): v is MonitorMode {
+  return v === 'test' || v === 'real' || v === 'universe';
+}
+
 export default function App() {
   const [mode, setMode] = useState<MonitorMode>('test');
   const [state, setState] = useState<EcosystemState | null>(null);
@@ -96,6 +100,18 @@ export default function App() {
 
   useWebSocket(mode, handleStateUpdate);
 
+  // Match UI to backend ALIEN_MODE (docker prod defaults to real / LIVE).
+  useEffect(() => {
+    fetch('api/health')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.mode && isMonitorMode(d.mode)) {
+          setMode(d.mode);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleNodeClick = useCallback((node: EcoNode) => {
     setSelectedNode(node);
   }, []);
@@ -111,7 +127,7 @@ export default function App() {
   }[theme];
 
   return (
-    <div className="relative w-screen h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="relative w-full min-h-[100dvh] h-[100dvh] bg-[#0a0a0f] overflow-hidden">
       {/* Grid background */}
       <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" />
 
@@ -174,11 +190,18 @@ export default function App() {
         />
       )}
 
-      {/* Holographic corner decorations */}
-      <CornerDecorations themeColor={themeColor} />
+      {/* Holographic corner decorations — desktop only */}
+      <div className="hidden md:block">
+        <CornerDecorations themeColor={themeColor} />
+      </div>
 
-      {/* Mode indicator */}
-      <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
+      {/* Mode indicator — above mobile control dock */}
+      <div
+        className="
+          absolute z-10 flex items-center gap-2 pointer-events-none
+          left-3 bottom-[calc(4.25rem+var(--safe-bottom))] sm:left-4 sm:bottom-4
+        "
+      >
         <div
           className="w-2 h-2 rounded-full animate-pulse"
           style={{

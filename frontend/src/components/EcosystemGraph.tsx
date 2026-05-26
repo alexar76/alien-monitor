@@ -10,6 +10,7 @@ import {
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { EcoNode, EcoLink, EcosystemState } from '../App';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // ---------------------------------------------------------------------------
 // Color mapping
@@ -729,6 +730,8 @@ function SceneContent({
         minDistance={3}
         maxDistance={35}
         maxPolarAngle={Math.PI * 0.78}
+        enablePan
+        touches={{ ONE: 2, TWO: 2 }}
       />
     </>
   );
@@ -745,6 +748,7 @@ interface Props {
 }
 
 export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIntensity }: Props) {
+  const isMobile = useIsMobile();
   const [flyToNodeId, setFlyToNodeId] = useState<string | null>(null);
 
   const handleNodeClick = useCallback((node: EcoNode) => {
@@ -757,7 +761,7 @@ export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIn
   }, []);
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 touch-none">
       <Canvas
         gl={{
           antialias: true,
@@ -766,8 +770,8 @@ export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIn
           toneMappingExposure: 1.3,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
-        camera={{ position: [0, 4, 16], fov: 52, near: 0.1, far: 120 }}
-        dpr={[1, 1.5]}
+        camera={{ position: [0, 4, 16], fov: isMobile ? 58 : 52, near: 0.1, far: 120 }}
+        dpr={isMobile ? [1, 1.25] : [1, 1.5]}
       >
         <SceneContent
           state={state}
@@ -783,7 +787,7 @@ export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIn
           <Bloom
             luminanceThreshold={0.2}
             luminanceSmoothing={0.9}
-            intensity={0.8}
+            intensity={isMobile ? 0.55 : 0.8}
             radius={0.5}
             mipmapBlur
           />
