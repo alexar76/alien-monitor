@@ -28,7 +28,7 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -39,6 +39,17 @@ from chain_metrics import (
     build_real_summary,
     fetch_onchain_snapshot,
     hub_events_to_activity,
+)
+from factory_products import fetch_factory_products_sync, merge_factory_products
+from monitor_auth import cors_allow_origins, require_monitor_auth
+from ai_assistant import (
+    EMPTY_QUESTION,
+    any_provider_configured,
+    build_live_context,
+    build_system_prompt,
+    generate_answer,
+    list_providers,
+    normalize_locale,
 )
 
 _MONITOR_ROOT = Path(__file__).resolve().parent.parent
@@ -53,13 +64,11 @@ load_dotenv()
 
 MODE = os.getenv("ALIEN_MODE", "test")  # "test" | "real" | "universe"
 PORT = int(os.getenv("ALIEN_PORT", "9100"))
-HOST = os.getenv("ALIEN_HOST", "0.0.0.0")
+HOST = os.getenv("ALIEN_HOST", "127.0.0.1")
 HUB_URL = os.getenv("HUB_URL", "http://localhost:9083").rstrip("/")
 MESH_URL = os.getenv("MESH_URL", "http://localhost:8090").rstrip("/")
 PROM_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090").rstrip("/")
 APP_URL = os.getenv("AICOM_API_URL", "http://localhost:9081").rstrip("/")
-
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Data models (hand-rolled, no pydantic to keep it light)
@@ -70,6 +79,9 @@ ECO_LINKS: list[dict] = []
 ACTIVITY_LOG: list[dict] = []
 METRICS_SNAPSHOT: dict = {}
 CONNECTED_CLIENTS: set = set()
+LAST_MONITOR_STATE: dict | None = None
+_state_fetch_lock = asyncio.Lock()
+STATE_TICK_INTERVAL = float(os.getenv("ALIEN_STATE_TICK_SEC", "1.5"))
 
 # ---------------------------------------------------------------------------
 # Ecosystem topology — defines the graph structure
@@ -606,6 +618,9 @@ async def fetch_real_metrics() -> dict:
         if factory_node:
             factory_node["status"] = "active"
 
+    # Real factory catalog → product planets orbiting AI-Factory
+    merge_factory_products(nodes, links, fetch_factory_products_sync(APP_URL))
+
     apply_chain_metrics_to_nodes(nodes, chain_snapshot)
 
     summary = build_real_summary(
@@ -635,9 +650,10 @@ async def fetch_real_metrics() -> dict:
 # ---------------------------------------------------------------------------
 
 ECOSYSTEM_CONTEXT = """
-You are the Alien Monitor AI — a helpful assistant embedded in a real-time
-ecosystem monitoring dashboard for AIMarket (AI-Factory). You answer questions
-about the ecosystem components, architecture, and current state.
+You are the Alien Monitor AI — navigator and expert for the real-time 3D
+ecosystem map (AIMarket / AI-Factory). You know every node, link, mode, and
+metric. Guide the user: what to click, where clusters sit, what LIVE vs UNI
+means, and how factory catalog maps to orange star clusters near Factory.
 
 ## Ecosystem components you know about:
 
@@ -692,11 +708,27 @@ EVM chains (Ethereum, Base, Arbitrum, Optimism, Polygon) + Solana.
 
 ## Current monitor modes
 - TEST mode: Simulated vibrant ecosystem with fake agents, transactions, channels.
-- REAL mode: Live data from actual running infrastructure.
+- UNI mode: Self-evolving universe — local chain + live Hub/Mesh/Factory. Phases:
+  BOOTSTRAP (hub seeded, first products), EXPANSION (buyer active, funding),
+  FEDERATION (new hubs spawn), MATURITY (steady-state economy).
+  External AI buyer creates real demand. External funding injected periodically.
+  Only the funding source is synthetic — everything else uses real infrastructure.
+- LIVE mode: Real production infrastructure with on-chain RPC.
 
-Answer concisely but thoroughly. If asked about metrics, mention current values
-shown in the monitor. If the monitor is in TEST mode, remind the user that
-data is simulated.
+## 3D map navigation (Alien Monitor UI)
+- Click any glowing node to fly the camera there and keep focus until the panel closes.
+- Hub is the center; Factory sits in the core nebula. Factory catalog items appear as
+  **star clusters** (group=cluster): one nebula per category/templates, many small
+  stars inside, spaced on a spiral so clusters never overlap. Open a cluster panel
+  to see up to 80 product names in children[].
+- LIVE: clusters sync from GET {factory}/api/products each tick.
+- UNI: catalog imported on start; new pipeline products via materialize API, then collapsed to clusters.
+- TEST: simulated nodes only.
+
+Answer concisely but thoroughly. You receive a LIVE MONITOR SNAPSHOT JSON on every
+request — treat it as ground truth for tick, mode, per-node metrics, and recent
+transactions/events. If monitor_mode is test, note simulated data. In universe
+mode, use scenario.phase from the snapshot.
 """
 
 
@@ -707,11 +739,13 @@ data is simulated.
 app = FastAPI(title="Alien Monitor", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_MONITOR_AUTH = [Depends(require_monitor_auth)]
 
 simulator = EcosystemSimulator()
 _real_tick = 0
@@ -741,28 +775,75 @@ async def chain_status():
     return await fetch_onchain_snapshot()
 
 
+async def _fetch_monitor_state() -> dict:
+    """Current ecosystem snapshot for REST, WebSocket, and AI context."""
+    global LAST_MONITOR_STATE
+    async with _state_fetch_lock:
+        if MODE == "universe":
+            state = await asyncio.to_thread(get_universe().tick_universe)
+        elif MODE == "real":
+            state = await fetch_real_metrics()
+        else:
+            state = await asyncio.to_thread(simulator.step)
+        LAST_MONITOR_STATE = state
+        return state
+
+
+def _slim_state_for_ws(state: dict) -> dict:
+    """Drop bulky debug fields from WebSocket payloads (REST /api/state unchanged)."""
+    if not isinstance(state, dict):
+        return state
+    slim = dict(state)
+    slim.pop("components", None)
+    return slim
+
+
+async def _monitor_broadcaster() -> None:
+    """Single background ticker — avoids blocking HTTP/AI on sync universe ticks."""
+    await asyncio.sleep(0.3)
+    while True:
+        try:
+            state = await _fetch_monitor_state()
+            payload = json.dumps(
+                {"type": "state_update", "data": _slim_state_for_ws(state)},
+                default=str,
+            )
+            dead: list = []
+            for ws in list(CONNECTED_CLIENTS):
+                try:
+                    await ws.send_text(payload)
+                except Exception:
+                    dead.append(ws)
+            for ws in dead:
+                CONNECTED_CLIENTS.discard(ws)
+        except Exception:
+            pass
+        await asyncio.sleep(STATE_TICK_INTERVAL)
+
+
+@app.on_event("startup")
+async def _on_startup() -> None:
+    asyncio.create_task(_monitor_broadcaster())
+
+
 @app.get("/api/state")
 async def get_state():
     """Return current full state snapshot."""
-    if MODE == "universe":
-        u = get_universe()
-        return u.tick_universe()
-    if MODE == "real":
-        return await fetch_real_metrics()
-    return simulator.step()
+    return await _fetch_monitor_state()
 
 
 @app.get("/api/summary")
 async def get_summary():
     """Return lightweight summary for headers/badges."""
+    if LAST_MONITOR_STATE and isinstance(LAST_MONITOR_STATE.get("summary"), dict):
+        return LAST_MONITOR_STATE["summary"]
     if MODE == "universe":
-        u = get_universe()
-        state = u.tick_universe()
+        state = await asyncio.to_thread(get_universe().tick_universe)
         return state["summary"]
     if MODE == "real":
         data = await fetch_real_metrics()
         return data.get("summary", {"mode": "real"})
-    state = simulator.step()
+    state = await asyncio.to_thread(simulator.step)
     return state["summary"]
 
 
@@ -793,11 +874,11 @@ async def get_topology():
     return {"nodes": nodes, "links": links}
 
 
-@app.get("/api/universe/status")
+@app.get("/api/universe/status", dependencies=_MONITOR_AUTH)
 async def universe_status():
     """Status of the UNI ecosystem runtime."""
     u = get_universe()
-    return {
+    status = {
         "running": u.running,
         "blockchain_ready": u.blockchain_ready,
         "tick": u.tick,
@@ -810,9 +891,64 @@ async def universe_status():
         "evm_escrow": u.evm_escrow_address,
         "mode": MODE,
     }
+    if u._scenario_engine is not None:
+        status["scenario"] = {
+            "phase": u._scenario_engine.phase,
+            "phase_progress": u._scenario_engine.get_phase_progress(u),
+            "tick_count": u._scenario_engine.tick_count,
+            "funding_total": u._scenario_engine.funding_stream.total_funding,
+            "hub_count": len(u._scenario_engine.hub_spawner.spawned_hubs),
+            "buyer_rounds": u._scenario_engine.external_buyer.rounds_completed,
+        }
+    try:
+        import httpx
+
+        r = httpx.get(f"{APP_URL}/api/uni/economy/summary", timeout=4.0)
+        if r.status_code == 200:
+            status["uni_economy"] = r.json()
+    except Exception:
+        pass
+    return status
 
 
-@app.post("/api/universe/start")
+@app.get("/api/universe/scenario", dependencies=_MONITOR_AUTH)
+async def universe_scenario():
+    """Scenario engine status and configuration."""
+    u = get_universe()
+    if u._scenario_engine is None:
+        return {"ok": False, "error": "Scenario engine not initialized"}
+    se = u._scenario_engine
+    return {
+        "ok": True,
+        "phase": se.phase,
+        "phase_color": se.phase if hasattr(se, 'phase') else "#00f0ff",
+        "phase_progress": se.get_phase_progress(u),
+        "tick_count": se.tick_count,
+        "funding_total": se.funding_stream.total_funding,
+        "hub_count": len(se.hub_spawner.spawned_hubs),
+        "buyer_rounds": se.external_buyer.rounds_completed,
+        "total_invocations": se.total_invocations,
+        "funding_stats": se.funding_stream.get_stats(),
+        "spawned_hubs": se.hub_spawner.spawned_hubs,
+    }
+
+
+@app.get("/api/universe/funding/history", dependencies=_MONITOR_AUTH)
+async def universe_funding_history():
+    """Funding stream history."""
+    u = get_universe()
+    if u._scenario_engine is None:
+        return {"ok": False, "error": "Scenario engine not initialized"}
+    fs = u._scenario_engine.funding_stream
+    return {
+        "ok": True,
+        "total_funding": fs.total_funding,
+        "rounds": fs.rounds,
+        "stats": fs.get_stats(),
+    }
+
+
+@app.post("/api/universe/start", dependencies=_MONITOR_AUTH)
 async def universe_start():
     """Start UNI: local chain, contract deploy, live layer polling."""
     global MODE
@@ -830,7 +966,7 @@ async def universe_start():
     }
 
 
-@app.post("/api/universe/stop")
+@app.post("/api/universe/stop", dependencies=_MONITOR_AUTH)
 async def universe_stop():
     """Stop UNI runtime and local chain processes."""
     global MODE
@@ -841,7 +977,7 @@ async def universe_stop():
     return {"ok": True}
 
 
-@app.post("/api/universe/materialize")
+@app.post("/api/universe/materialize", dependencies=_MONITOR_AUTH)
 async def universe_materialize(body: dict):
     """
     Factory webhook — called when AI-Factory creates a product.
@@ -858,7 +994,7 @@ async def universe_materialize(body: dict):
     }
 
 
-@app.post("/api/universe/materialize/batch")
+@app.post("/api/universe/materialize/batch", dependencies=_MONITOR_AUTH)
 async def universe_materialize_batch(body: dict):
     """Materialize multiple products at once."""
     u = get_universe()
@@ -870,61 +1006,142 @@ async def universe_materialize_batch(body: dict):
     return {"ok": True, "entities": results, "total_products": len(u.products)}
 
 
-@app.get("/api/universe/state")
+@app.get("/api/universe/state", dependencies=_MONITOR_AUTH)
 async def universe_state():
     """Get full UNI ecosystem state snapshot."""
     u = get_universe()
     return u.tick_universe()
 
 
-@app.post("/api/ai/ask")
-async def ai_ask(body: dict):
-    """AI assistant — answer questions about the ecosystem."""
-    question = body.get("question", "")
-    if not question:
-        return {"answer": "Please ask a question about the AIMarket ecosystem."}
+@app.get("/api/ai/providers")
+async def ai_providers():
+    """LLM providers (same registry as aicom model_providers.yaml)."""
+    return list_providers()
 
-    if not ANTHROPIC_API_KEY:
-        # Fallback: rule-based answers
-        return {"answer": _fallback_answer(question)}
+
+@app.post("/api/ai/ask", dependencies=_MONITOR_AUTH)
+async def ai_ask(body: dict):
+    """AI assistant — live state + multi-provider LLM (default: deepseek-v4-pro)."""
+    question = (body.get("question") or "").strip()
+    locale = normalize_locale(body.get("locale", "en"))
+    if not question:
+        return {"answer": EMPTY_QUESTION[locale]}
+
+    state = body.get("state") if isinstance(body.get("state"), dict) else None
+    if not state:
+        state = LAST_MONITOR_STATE
+    if state is None:
+        try:
+            state = await _fetch_monitor_state()
+        except Exception:
+            state = None
+
+    selected_node = body.get("selected_node_id") or body.get("selected_node")
+    live_ctx = build_live_context(state, MODE, str(selected_node) if selected_node else None)
+    system = build_system_prompt(ECOSYSTEM_CONTEXT, locale, live_ctx)
+    provider_id = body.get("provider") or body.get("provider_id")
+    model_role = body.get("model_role") or "heavy"
+
+    if not any_provider_configured():
+        return {
+            "answer": _fallback_answer(question, locale, state, MODE),
+            "meta": {"provider": "fallback", "live_state": state is not None},
+        }
 
     try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=500,
-            system=ECOSYSTEM_CONTEXT,
-            messages=[{"role": "user", "content": question}],
+        answer, meta = await generate_answer(
+            question=question,
+            locale=locale,
+            system_prompt=system,
+            provider_id=provider_id,
+            model_role=model_role,
         )
-        return {"answer": msg.content[0].text}
+        meta["live_state"] = state is not None
+        return {"answer": answer, "meta": meta}
     except Exception as e:
-        return {"answer": _fallback_answer(question) + f"\n\n(AI unavailable: {e})"}
+        fb = _fallback_answer(question, locale, state, MODE)
+        return {
+            "answer": fb + f"\n\n(LLM error: {e})",
+            "meta": {"provider": "fallback", "error": str(e)},
+        }
 
 
-def _fallback_answer(question: str) -> str:
+def _fallback_answer(
+    question: str,
+    locale: str = "en",
+    state: dict | None = None,
+    mode: str | None = None,
+) -> str:
     q = question.lower()
-    if "hub" in q or "хаб" in q:
-        return "AIMarket Hub — это федеративный каталог AI-возможностей с маршрутизацией микроплатежей. Порт 9083. Поддерживает discover → channel → invoke → settle. Содержит 15 плагинов."
-    if "contract" in q or "контракт" in q or "escrow" in q:
-        return "У нас два эскроу-контракта: AIMarketEscrow (EVM — Ethereum/Base/Arbitrum) и aimarket-escrow (Solana). Оба поддерживают платёжные каналы с USDT/USDC. Плюс NFT-контракт (ERC-721) для передаваемых entitlements."
-    if "plugin" in q or "плагин" in q:
-        return "15 плагинов: safety, TEE, channels, streaming, reputation, auction, orchestrator, NFT, ZK proofs, provenance, MCP packager, personas, promo, dataset, data-cap. Каждый подключается через entry_points 'aimarket.plugins'."
-    if "desktop" in q or "app" in q or "flutter" in q:
-        return "9 десктопных приложений: 8 на Flutter (Capability Composer, Coaches, Prospector, Dashboard) + 1 на Rust/Tauri (Local Security Audit). Все используют Dart SDK для связи с хабом."
-    if "mesh" in q or "меш" in q:
-        return "AI Service Mesh (порт 8090) — автономный discovery, zero-trust verification, escrow и оркестрация между AI-агентами. Как Airbnb для AI."
-    if "acex" in q:
-        return "ACEX (Agent Capital Exchange) — рынок капитала для AI-агентов: ALP листинги, CapShares, AgentNotes, Pulse AMM. Позволяет торговать долями в AI-возможностях."
-    if "sdk" in q:
-        return "Три SDK: Dart (Flutter), TypeScript (Node.js/браузер), Rust (Tauri/CLI). Все следуют протоколу: discover → open_channel → invoke → close_channel → verify."
-    if "mode" in q or "режим" in q or "test" in q:
-        return (
-            f"Монитор сейчас в режиме: {MODE.upper()}. "
-            "TEST — симуляция. UNI — локальная сеть + живые Hub/Mesh/Factory/Prometheus. "
-            "LIVE — production RPC и сервисы из .env."
+    live_hint = ""
+    if state:
+        summary = state.get("summary") or {}
+        tick = state.get("tick", summary.get("tick", "?"))
+        m = (mode or summary.get("mode") or "unknown").upper()
+        live_hint = f" [Сейчас: режим {m}, tick {tick}.]" if locale == "ru" else (
+            f" [Now: mode {m}, tick {tick}.]" if locale == "en" else f" [Ahora: modo {m}, tick {tick}.]"
         )
-    return "Я AI-помощник Инопланетного Монитора. Спросите о хабе, контрактах, плагинах, десктопных приложениях, AI Service Mesh, ACEX, SDK или о текущем состоянии экосистемы."
+    if locale == "ru":
+        if "hub" in q or "хаб" in q:
+            return "AIMarket Hub — федеративный каталог AI-возможностей с маршрутизацией микроплатежей. Порт 9083. discover → channel → invoke → settle. 15 плагинов."
+        if "contract" in q or "контракт" in q or "escrow" in q:
+            return "Два эскроу: AIMarketEscrow (EVM) и aimarket-escrow (Solana). Каналы USDT/USDC. NFT ERC-721 для entitlements."
+        if "plugin" in q or "плагин" in q:
+            return "15 плагинов через entry_points 'aimarket.plugins': safety, TEE, channels, streaming, reputation, auction, orchestrator, NFT, ZK, provenance, MCP, personas, promo, dataset, data-cap."
+        if "desktop" in q or "app" in q or "flutter" in q:
+            return "9 десктопных приложений: 8 Flutter + 1 Rust/Tauri (Local Security Audit). Dart SDK к хабу."
+        if "mesh" in q or "меш" in q:
+            return "AI Service Mesh (8090): discovery, zero-trust, escrow, оркестрация агентов."
+        if "acex" in q:
+            return "ACEX — рынок капитала AI-агентов: ALP, CapShares, AgentNotes, Pulse AMM."
+        if "sdk" in q:
+            return "SDK: Dart, TypeScript, Rust. Протокол: discover → open_channel → invoke → close_channel → verify."
+        if "mode" in q or "режим" in q or "test" in q or "tick" in q or "метрик" in q:
+            return (
+                f"Режим монитора: {(mode or MODE).upper()}. TEST — симуляция. UNI — локальная сеть + живые слои. LIVE — production."
+                + live_hint
+            )
+        return "Спросите о хабе, контрактах, плагинах, десктопе, mesh, ACEX или SDK." + live_hint
+    if locale == "es":
+        if "hub" in q:
+            return "AIMarket Hub: catálogo federado + micropagos. Puerto 9083. 15 plugins."
+        if "contract" in q or "escrow" in q:
+            return "Escrow EVM y Solana con canales USDT/USDC. NFT ERC-721."
+        if "plugin" in q:
+            return "15 plugins vía entry_points 'aimarket.plugins'."
+        if "desktop" in q or "app" in q:
+            return "9 apps de escritorio: 8 Flutter + 1 Rust/Tauri."
+        if "mesh" in q:
+            return "AI Service Mesh (8090): discovery, verificación, escrow."
+        if "acex" in q:
+            return "ACEX: mercado de capital para agentes AI."
+        if "sdk" in q:
+            return "SDK Dart, TypeScript y Rust con el mismo flujo de protocolo."
+        if "mode" in q or "test" in q or "tick" in q:
+            return f"Modo actual: {(mode or MODE).upper()}. TEST simula; UNI cadena local + capas vivas; LIVE producción." + live_hint
+        return "Pregunta sobre hub, contratos, plugins, escritorio, mesh, ACEX o SDK." + live_hint
+    # English
+    if "hub" in q:
+        return "AIMarket Hub is a federated AI capability catalog with micropayment routing on port 9083 (discover → channel → invoke → settle). 15 plugins loaded."
+    if "contract" in q or "escrow" in q:
+        return "Two escrows: AIMarketEscrow (EVM) and aimarket-escrow (Solana), plus an ERC-721 NFT contract for transferable entitlements."
+    if "plugin" in q:
+        return "15 plugins via entry_points 'aimarket.plugins': safety, TEE, channels, streaming, reputation, auction, orchestrator, NFT, ZK, provenance, MCP, personas, promo, dataset, data-cap."
+    if "desktop" in q or "app" in q or "flutter" in q:
+        return "Nine desktop apps: eight Flutter integrations plus one Rust/Tauri security audit tool, all using the Dart SDK to reach the hub."
+    if "mesh" in q:
+        return "AI Service Mesh (8090) handles agent discovery, zero-trust verification, escrow, and orchestration."
+    if "acex" in q:
+        return "ACEX (Agent Capital Exchange) lists ALPs, CapShares, AgentNotes, and runs a Pulse AMM for AI agent capital."
+    if "sdk" in q:
+        return "Three SDKs — Dart, TypeScript, Rust — share discover → open_channel → invoke → close_channel → verify."
+    if "mode" in q or "test" in q or "tick" in q or "metric" in q:
+        return (
+            f"Monitor mode: {(mode or MODE).upper()}. TEST simulates; UNI uses local chain + live Hub/Mesh/Factory/Prometheus; "
+            "LIVE reads production RPC and services from .env."
+            + live_hint
+        )
+    return "Ask about the hub, contracts, plugins, desktop apps, service mesh, ACEX, SDKs, or current ecosystem state." + live_hint
 
 
 # ---------------------------------------------------------------------------
@@ -936,35 +1153,28 @@ def _fallback_answer(question: str) -> str:
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     CONNECTED_CLIENTS.add(ws)
+    if LAST_MONITOR_STATE:
+        await ws.send_text(json.dumps({
+            "type": "state_update",
+            "data": LAST_MONITOR_STATE,
+        }, default=str))
     try:
         while True:
-            # Wait for client message (ping or mode switch request)
-            try:
-                data = await asyncio.wait_for(ws.receive_text(), timeout=2.0)
-                msg = json.loads(data)
-                cmd = msg.get("cmd", "")
-                if cmd == "set_mode":
-                    global MODE
-                    MODE = msg.get("mode", MODE)
-                    await ws.send_text(json.dumps({"type": "mode_changed", "mode": MODE}))
-            except asyncio.TimeoutError:
-                pass  # No message, just push state
-
-            # Push current state
-            if MODE == "universe":
-                u = get_universe()
-                state = u.tick_universe()
-            elif MODE == "real":
-                state = await fetch_real_metrics()
-            else:
-                state = simulator.step()
-
-            await ws.send_text(json.dumps({
-                "type": "state_update",
-                "data": state,
-            }))
-
-            await asyncio.sleep(1.5)  # ~0.67 Hz refresh — smooth but not overwhelming
+            data = await ws.receive_text()
+            msg = json.loads(data)
+            cmd = msg.get("cmd", "")
+            if cmd == "set_mode":
+                global MODE
+                MODE = msg.get("mode", MODE)
+                if MODE == "universe":
+                    u = get_universe()
+                    if not u.running:
+                        u.running = True
+                        await asyncio.to_thread(u.start_blockchain)
+                        await asyncio.to_thread(u.deploy_contracts)
+                        await asyncio.to_thread(u.seed_entities)
+                    await asyncio.to_thread(u.sync_factory_catalog, APP_URL)
+                await ws.send_text(json.dumps({"type": "mode_changed", "mode": MODE}))
     except WebSocketDisconnect:
         pass
     except Exception:

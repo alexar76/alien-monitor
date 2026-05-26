@@ -9,6 +9,8 @@
 
 **Live demo:** **[https://magic-ai-factory.com/monitor/](https://magic-ai-factory.com/monitor/)** (production on the AI-Factory host, LIVE mode).
 
+**Pulse Terminal (ACEX)** runs on the same host: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)** — deploy both with `docker compose -f docker-compose.prod.yml up -d --build` or `./scripts/deploy_alien_monitor.sh` from the monorepo root.
+
 Watch every component — hub, contracts, agents, desktop apps, plugins, blockchains — as a living, breathing cosmos. Click any node to zoom in, inspect metrics, and see live data flowing through the network.
 
 ## Screenshots
@@ -22,18 +24,34 @@ Watch every component — hub, contracts, agents, desktop apps, plugins, blockch
 | ![AI Answering](docs/screenshots/05-ai-answering.png) | ![Transaction Flow](docs/screenshots/06-transaction-flow.png) |
 | **AI Knowledge** — Answers ecosystem questions | **Activity Stream** — Live transactions & events |
 | ![Magenta Theme](docs/screenshots/07-magenta-theme.png) | ![LIVE Mode](docs/screenshots/08-live-green.png) |
-| **Magenta Theme** — 3 sci-fi color schemes | **Green LIVE Mode** — Real infrastructure connection |
+| **Magenta Theme** — 3 sci-fi color schemes | **LIVE Mode** — Real infrastructure connection |
+
+> **UNI gallery + video:** run `backend/.venv/bin/python3 scripts/capture_uni_media.py` → `docs/screenshots/09-*.png` and `docs/recordings/uni-demo-latest.mp4`.
+
+---
+
+## Demo video (UNI mode)
+
+Regenerate after `./start.sh --universe` or with auto-boot:
+
+```bash
+backend/.venv/bin/python3 scripts/capture_uni_media.py
+```
+
+| Asset | Path |
+|-------|------|
+| WebM | `docs/recordings/uni-demo-latest.webm` |
+| MP4 | `docs/recordings/uni-demo-latest.mp4` |
 
 ---
 
 ## Three Modes
 
-### 🔮 UNIVERSE Mode (NEW)
-**Virtual machine for the entire ecosystem.** Self-contained:
-- Embedded blockchain (Anvil + Solana validator)
-- Auto-deployed smart contracts (Escrow, NFT, USDT)
-- Virtual agents with balances
-- **Product materialization** — when factory creates a product, a new planet appears in the universe
+### 🟢 UNI Mode
+Local chain + **live polls** from deployed Hub, Mesh, Factory, and Prometheus — same UI as LIVE (no simulated metrics).
+
+- Embedded EVM (Anvil) + optional Solana validator
+- Auto-deploy Escrow / NFT on local chain
 - Factory webhook: `POST /api/universe/materialize`
 
 ### 🟡 TEST Mode
@@ -66,13 +84,35 @@ A **personal observable universe** where each celestial body is a living compone
 
 ## Features
 
-- **Virtual Universe Machine** — Embedded blockchain + contract deployment + virtual entities
+- **UNI runtime** — Local chain + live layer polling (no mock metrics)
 - **Product Materialization** — Factory products become new planets via webhook
 - **3D Force-Directed Universe** — Zoom, rotate, pan, fly-to nodes
 - **Bloom Post-Processing** — Everything glows (Bloom + Vignette + Noise)
 - **Real-Time WebSocket** — Live data every 1.5s
-- **AI Assistant** — Claude Haiku chatbot about ecosystem functions
+- **AI Assistant** — multi-provider LLM (default **DeepSeek `deepseek-v4-pro`**, same registry as aicom) with **live monitor state** in every prompt (tick, mode, node metrics, activity)
 - **3 Themes** — Cyan, Magenta, Green with pulse intensity slider
+- **i18n (EN / RU / ES)** — JSON locale files, browser-detected language, switcher in the control bar; AI replies in the selected language
+
+### Localization
+
+| Locale | File |
+|--------|------|
+| English | `frontend/src/i18n/locales/en.json` |
+| Russian | `frontend/src/i18n/locales/ru.json` |
+| Spanish | `frontend/src/i18n/locales/es.json` |
+
+Choice is stored in `localStorage` (`alien-monitor-locale`). AI requests send `locale` to `POST /api/ai/ask`. See `frontend/src/i18n/README.md`.
+
+### AI providers
+
+Reads `data/config/model_providers.yaml` from the parent **aicom** repo (or `ALIEN_LLM_CONFIG`). Default: `deepseek_api` / `deepseek-v4-pro`.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/ai/providers` | List enabled providers + models |
+| `POST /api/ai/ask` | `{ question, locale, provider?, model_role?, state?, selected_node_id? }` |
+
+The frontend sends the current WebSocket `state` on each question so the model sees the same 3D cosmos data you see.
 
 ## Production deploy (magic-ai-factory.com)
 
@@ -96,10 +136,8 @@ Environment (optional overrides in parent `.env`):
 
 ## Quick Start (local)
 
-**GitHub mirror:**
-
 ```bash
-git clone https://github.com/alexar76/alien-monitor.git
+git clone http://5.129.212.122/Superowner/alien-monitor.git
 cd alien-monitor
 
 # Virtual Universe mode (embedded blockchain + entities)
@@ -110,8 +148,6 @@ cd alien-monitor
 
 # Open: http://localhost:5173
 ```
-
-**Monorepo (canonical source):** edit `aicom/alien-monitor/`, publish with `./scripts/publish_all_repos.sh --satellite alien-monitor`.
 
 ## Universe Mode API
 

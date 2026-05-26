@@ -1,73 +1,34 @@
 """
-Virtual Universe Machine — self-contained AIMarket ecosystem emulator.
+Universe runtime — local chain + live polls from deployed AIMarket layers.
 
-Spins up an embedded blockchain (Anvil for EVM), deploys real contracts,
-executes real transactions, and creates virtual entities for every product.
-
-All blockchain interactions produce REAL transaction hashes visible in the
-monitor's activity stream with full analytics: blocks, gas, confirmations.
+UNI mode does not simulate metrics: Hub, Mesh, Factory, Prometheus and the
+embedded EVM/Solana nodes are read from real endpoints and RPC.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import random
+import re
 import shutil
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-# ---------------------------------------------------------------------------
-# Virtual entity
-# ---------------------------------------------------------------------------
+# Anvil account #0 — standard Foundry dev key (local universe only).
+ANVIL_DEPLOYER_KEY = (
+    "0xac0974bec39a17e36ba4a6b4d4e5d4e5d4e5d4e5d4e5d4e5d4e5d4e5d4ecafe"
+)
 
-AGENT_NAMES = [
-    "AlphaBot", "DataWhisperer", "CodeNova", "PipelineX",
-    "TradeMancer", "InsightForge", "NetPulse", "CryptoLens",
-    "AuditHawk", "SpecForge", "GrowthVane", "DeepScout",
-    "QuantumMuse", "FractalSynth", "VoidWalker", "StarWeaver",
-]
+AICOM_ROOT = Path(__file__).resolve().parent.parent.parent
 
-PRODUCT_ICONS = ["star", "planet", "moon", "comet", "asteroid", "nebula", "pulsar"]
+# Poll Factory catalog every N ticks (~60s at 1.5s/tick) — not every broadcast.
+_FACTORY_SYNC_EVERY_TICKS = max(1, int(os.environ.get("ALIEN_FACTORY_SYNC_TICKS", "40")))
+_MAX_PRODUCT_ENTITIES = max(50, int(os.environ.get("ALIEN_MAX_PRODUCT_ENTITIES", "400")))
 
-
-class VirtualEntity:
-    def __init__(self, eid: str, name: str, etype: str, group: str = "product"):
-        self.id = eid
-        self.name = name
-        self.type = etype
-        self.group = group
-        self.created_at = datetime.now(timezone.utc).isoformat()
-        self.position = {
-            "x": random.uniform(-8, 8),
-            "y": random.uniform(-6, 6),
-            "z": random.uniform(-6, 6),
-        }
-        self.metrics: dict = {}
-        self.status = "active"
-        self.parent_id: Optional[str] = None
-        self.color = random.choice(["#00f0ff", "#ff00ff", "#00ff88", "#7b2fff", "#ffdd00", "#ff6633"])
-
-    def to_node(self) -> dict:
-        return {
-            "id": self.id, "label": self.name, "group": self.group,
-            "icon": random.choice(PRODUCT_ICONS),
-            "description": f"Virtual {self.type}: {self.name}",
-            "metrics": self.metrics, "status": self.status,
-            "position": self.position, "url": None, "children": [],
-            "color": self.color, "parent_id": self.parent_id,
-            "created_at": self.created_at,
-        }
-
-
-# ---------------------------------------------------------------------------
-# Minimal ERC20 bytecode (compiled FakeUSDT)
-# ---------------------------------------------------------------------------
-
+# Minimal ERC20 bytecode (FakeUSDT) — deployed on local chain for escrow whitelist.
 ERC20_BYTECODE = (
     "60806040523480156200001157600080fd5b506040518060400160405280600881526020017f"
     "46616b6555534454000000000000000000000000000000000000000000000000008152506040518060400160405280600481526020017f"
@@ -84,9 +45,53 @@ ERC20_BYTECODE = (
 )
 
 
-# ---------------------------------------------------------------------------
-# VirtualUniverse
-# ---------------------------------------------------------------------------
+class EcosystemEntity:
+    """A component node in the UNI ecosystem graph."""
+
+    def __init__(
+        self,
+        eid: str,
+        name: str,
+        etype: str,
+        group: str = "product",
+        *,
+        description: str = "",
+        icon: str = "planet",
+    ):
+        self.id = eid
+        self.name = name
+        self.type = etype
+        self.group = group
+        self.description = description or f"{name} — AIMarket ecosystem component"
+        self.icon = icon
+        self.created_at = datetime.now(timezone.utc).isoformat()
+        self.position = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self.metrics: dict = {}
+        self.status = "unknown"
+        self.parent_id: Optional[str] = None
+        self.color = "#00f0ff"
+        self.url: Optional[str] = None
+
+    def to_node(self) -> dict:
+        return {
+            "id": self.id,
+            "label": self.name,
+            "group": self.group,
+            "icon": self.icon,
+            "description": self.description,
+            "metrics": self.metrics,
+            "status": self.status,
+            "position": self.position,
+            "url": self.url,
+            "children": [],
+            "color": self.color,
+            "parent_id": self.parent_id,
+            "created_at": self.created_at,
+        }
+
+
+# Back-compat alias for tests / imports
+VirtualEntity = EcosystemEntity
 
 
 class VirtualUniverse:
@@ -97,22 +102,16 @@ class VirtualUniverse:
         self.anvil_proc: Optional[subprocess.Popen] = None
         self.solana_proc: Optional[subprocess.Popen] = None
 
-        # Contract addresses (populated after deploy)
         self.evm_usdt_address: Optional[str] = None
         self.evm_escrow_address: Optional[str] = None
         self.evm_nft_address: Optional[str] = None
+        self.payment_recipient: Optional[str] = None
 
-        # web3 instance (lazy)
         self._w3 = None
-
-        # Virtual entities
-        self.entities: dict[str, VirtualEntity] = {}
+        self.entities: dict[str, EcosystemEntity] = {}
         self.products: list[dict] = []
         self.transactions: list[dict] = []
-        self.events: list[dict] = []
-        self.channels: list[dict] = []
         self.agents: list[dict] = []
-        self.blocks_mined: list[dict] = []  # on-chain block analytics
         self.chain_analytics: dict = {"blocks": 0, "tx_count": 0, "gas_spent": 0, "addresses": 0}
 
         self.tick = 0
@@ -120,49 +119,51 @@ class VirtualUniverse:
         self.blockchain_ready = False
         self._pending_materializations: list[dict] = []
         self._eth_accounts: list[str] = []
+        self._last_layers: dict = {}
+        self._scenario_engine = None
+        self._factory_sync_every_ticks = int(os.environ.get("ALIEN_FACTORY_SYNC_TICKS", "40"))
 
-        self.evm_rpc = "http://localhost:8545"
-        self.solana_rpc = "http://localhost:8899"
-
-    # ------------------------------------------------------------------
-    # Blockchain
-    # ------------------------------------------------------------------
+        self.evm_rpc = (os.environ.get("ALIEN_UNIVERSE_EVM_RPC") or "http://127.0.0.1:8545").rstrip("/")
+        self.solana_rpc = (os.environ.get("ALIEN_UNIVERSE_SOLANA_RPC") or "http://127.0.0.1:8899").rstrip("/")
+        self.chain_label = os.environ.get("ALIEN_UNIVERSE_CHAIN_LABEL", "EVM Network")
 
     def start_blockchain(self) -> bool:
         started = False
         if shutil.which("anvil"):
             try:
                 self.anvil_proc = subprocess.Popen(
-                    ["anvil", "--host", "0.0.0.0", "--port", "8545",
-                     "--chain-id", "31337", "--block-time", "2",
-                     "--accounts", "20", "--balance", "1000", "--silent"],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    [
+                        "anvil", "--host", "127.0.0.1", "--port", "8545",
+                        "--chain-id", "31337", "--block-time", "2",
+                        "--accounts", "20", "--balance", "1000", "--silent",
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
                 time.sleep(3)
                 started = True
-                print("[Universe] Anvil started — chain 31337, 20 accounts, 1000 ETH each")
-            except Exception as e:
-                print(f"[Universe] Anvil failed: {e}")
+                print("[Universe] EVM node online")
+            except Exception as exc:
+                print(f"[Universe] EVM start failed: {exc}")
         else:
-            print("[Universe] Anvil not found. Install: curl -L https://foundry.paradigm.xyz | bash")
+            print("[Universe] anvil not found — install Foundry")
 
         if shutil.which("solana-test-validator"):
             try:
                 self.solana_proc = subprocess.Popen(
                     ["solana-test-validator", "--reset", "--quiet", "--rpc-port", "8899"],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
                 time.sleep(3)
-                print("[Universe] Solana validator started")
-            except Exception as e:
-                print(f"[Universe] Solana failed: {e}")
+                print("[Universe] Solana node online")
+            except Exception as exc:
+                print(f"[Universe] Solana start failed: {exc}")
 
         self.blockchain_ready = started
-
         if started:
             self._init_web3()
             self._fetch_chain_state()
-
         return started
 
     def stop_blockchain(self):
@@ -180,146 +181,122 @@ class VirtualUniverse:
         try:
             from web3 import Web3
         except ImportError:
-            print("[Universe] web3.py not installed. Install: pip install web3")
+            print("[Universe] web3.py missing — pip install web3")
             return
-
         self._w3 = Web3(Web3.HTTPProvider(self.evm_rpc))
         if self._w3.is_connected():
             self._eth_accounts = self._w3.eth.accounts
-            print(f"[Universe] web3 connected — chain {self._w3.eth.chain_id}, "
-                  f"{len(self._eth_accounts)} accounts")
-        else:
-            print("[Universe] web3 connection failed")
+            self.payment_recipient = self._eth_accounts[0]
+            print(f"[Universe] EVM connected — chain {self._w3.eth.chain_id}")
 
     def _fetch_chain_state(self):
-        """Get current blockchain analytics."""
         if not self._w3 or not self._w3.is_connected():
             return
         try:
-            block = self._w3.eth.get_block('latest')
+            block = self._w3.eth.get_block("latest")
             self.chain_analytics["blocks"] = block["number"]
-            self.chain_analytics["tx_count"] = len(block.get("transactions", []))
-            self.chain_analytics["gas_spent"] = block.get("gasUsed", 0)
-            self.chain_analytics["addresses"] = len(self._eth_accounts)
+            self.chain_analytics["tx_count"] = len(self.transactions)
         except Exception:
             pass
 
-    # ------------------------------------------------------------------
-    # Contract deployment
-    # ------------------------------------------------------------------
-
     def deploy_contracts(self):
-        """Deploy FakeUSDT and virtual contracts to Anvil."""
         if not self._w3 or not self._w3.is_connected():
-            print("[Universe] No web3 — skipping deploy")
+            print("[Universe] EVM not connected — skip deploy")
             return
 
         deployer = self._eth_accounts[0]
-
-        # Deploy FakeUSDT
-        try:
-            abi = [
-                {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
-                {"constant": True, "inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "type": "function"},
-                {"constant": True, "inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "type": "function"},
-                {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "type": "function"},
-                {"constant": False, "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"},
-            ]
-            Contract = self._w3.eth.contract(abi=abi, bytecode=ERC20_BYTECODE)
-            tx_hash = Contract.constructor().transact({"from": deployer})
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-            self.evm_usdt_address = receipt.contractAddress
-            print(f"[Universe] FakeUSDT deployed: {self.evm_usdt_address}  (tx: {tx_hash.hex()[:16]}...)")
-            self._record_tx(tx_hash, receipt, "deploy", "FakeUSDT")
-        except Exception as e:
-            print(f"[Universe] USDT deploy failed: {e}")
-            self.evm_usdt_address = "0xB2" * 20
-
-        self.evm_escrow_address = "0xA1" * 20
-        self.evm_nft_address = "0xC3" * 20
-
-        # Mint USDT to all agent accounts
-        if self.evm_usdt_address:
-            self._mint_tokens()
-
+        self._deploy_usdt(deployer)
+        self._deploy_escrow_forge(deployer)
+        self._deploy_nft_forge(deployer)
         self._fetch_chain_state()
         self._save_config()
 
-    def _mint_tokens(self):
-        """Transfer ETH (as simulated USDT) to agent accounts for on-chain activity."""
-        if not self._w3:
-            return
-        deployer = self._eth_accounts[0]
-        for i, acct in enumerate(self._eth_accounts[1:10]):
+    def _deploy_usdt(self, deployer: str):
+        try:
+            abi = [
+                {"constant": True, "inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "type": "function"},
+                {"constant": False, "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"},
+            ]
+            contract = self._w3.eth.contract(abi=abi, bytecode=ERC20_BYTECODE)
+            tx_hash = contract.constructor().transact({"from": deployer})
+            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+            self.evm_usdt_address = receipt.contractAddress
+            self._record_tx(tx_hash, receipt, "deploy", "USDT")
+            print(f"[Universe] USDT deployed: {self.evm_usdt_address}")
+        except Exception as exc:
+            print(f"[Universe] USDT deploy failed: {exc}")
+
+    def _forge_run(self, script: str, deployer: str, extra_env: dict) -> str | None:
+        if not shutil.which("forge"):
+            return None
+        evm_dir = AICOM_ROOT / "contracts" / "evm"
+        if not evm_dir.is_dir():
+            return None
+        env = os.environ.copy()
+        env["PRIVATE_KEY"] = ANVIL_DEPLOYER_KEY
+        env["INITIAL_HUBS"] = deployer
+        if self.evm_usdt_address:
+            env["INITIAL_TOKENS"] = self.evm_usdt_address
+        env.update(extra_env)
+        try:
+            subprocess.run(
+                ["forge", "script", script, "--rpc-url", self.evm_rpc, "--broadcast", "--slow"],
+                cwd=str(evm_dir),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=180,
+                check=False,
+            )
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            print(f"[Universe] forge {script}: {exc}")
+            return None
+        return self._parse_broadcast_address(script)
+
+    def _parse_broadcast_address(self, script: str) -> str | None:
+        broadcast = AICOM_ROOT / "contracts" / "evm" / "broadcast" / script / "31337"
+        if not broadcast.is_dir():
+            return None
+        runs = sorted(broadcast.glob("run-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for run in runs[:3]:
             try:
-                tx_hash = self._w3.eth.send_transaction({
-                    "from": deployer,
-                    "to": acct,
-                    "value": self._w3.to_wei(random.randint(100, 500), "ether"),
-                    "gas": 21000,
-                })
-                receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
-                self._record_tx(tx_hash, receipt, "fund", f"Agent-{i}")
-            except Exception as e:
-                pass
+                data = json.loads(run.read_text(encoding="utf-8"))
+                for tx in data.get("transactions") or []:
+                    addr = tx.get("contractAddress")
+                    if addr and addr.startswith("0x"):
+                        return addr
+                text = run.read_text(encoding="utf-8")
+                m = re.search(r"0x[a-fA-F0-9]{40}", text)
+                if m:
+                    return m.group(0)
+            except (OSError, json.JSONDecodeError):
+                continue
+        return None
+
+    def _deploy_escrow_forge(self, deployer: str):
+        addr = self._forge_run("script/Deploy.s.sol", deployer, {})
+        if addr:
+            self.evm_escrow_address = addr
+            print(f"[Universe] Escrow deployed: {addr}")
+        else:
+            print("[Universe] Escrow deploy skipped (forge unavailable or failed)")
+
+    def _deploy_nft_forge(self, deployer: str):
+        addr = self._forge_run("script/DeployNFT.s.sol", deployer, {})
+        if addr:
+            self.evm_nft_address = addr
+            print(f"[Universe] NFT deployed: {addr}")
 
     def _record_tx(self, tx_hash, receipt, action: str, target: str):
-        """Record an on-chain transaction for the monitor's activity stream."""
-        self.transactions.append({
-            "id": tx_hash.hex()[:16],
-            "hash": tx_hash.hex(),
-            "from": receipt.get("from", "0x"),
-            "to": receipt.get("to", "0x"),
-            "action": action,
-            "target": target,
-            "amount": 0,
-            "token": "ETH",
-            "block": receipt.get("blockNumber", 0),
-            "gas_used": receipt.get("gasUsed", 0),
-            "status": "confirmed",
-            "ts": datetime.now(timezone.utc).isoformat(),
-            "onchain": True,
-        })
-
-    def _save_config(self):
-        config = {
-            "evm_rpc": self.evm_rpc,
-            "evm_usdt": self.evm_usdt_address,
-            "evm_escrow": self.evm_escrow_address,
-            "evm_nft": self.evm_nft_address,
-            "chain_id": 31337,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        (self.data_dir / "universe_config.json").write_text(json.dumps(config, indent=2))
-
-    # ------------------------------------------------------------------
-    # On-chain transaction execution (called during ticks)
-    # ------------------------------------------------------------------
-
-    def _execute_random_tx(self) -> Optional[dict]:
-        """Execute a random on-chain transfer between agent accounts. Returns tx info."""
-        if not self._w3 or len(self._eth_accounts) < 2:
-            return None
-        try:
-            sender = random.choice(self._eth_accounts[:10])
-            receiver = random.choice([a for a in self._eth_accounts[:10] if a != sender])
-            amount_eth = round(random.uniform(0.001, 0.5), 6)
-            amount_wei = self._w3.to_wei(amount_eth, "ether")
-
-            tx_hash = self._w3.eth.send_transaction({
-                "from": sender,
-                "to": receiver,
-                "value": amount_wei,
-                "gas": 21000,
-            })
-            receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=5)
-
-            tx_info = {
+        self.transactions.append(
+            {
                 "id": tx_hash.hex()[:16],
                 "hash": tx_hash.hex(),
-                "from": sender[:10] + "...",
-                "to": receiver[:10] + "...",
-                "amount": amount_eth,
+                "from": str(receipt.get("from", "0x")),
+                "to": str(receipt.get("to") or target),
+                "action": action,
+                "target": target,
+                "amount": 0,
                 "token": "ETH",
                 "block": receipt.get("blockNumber", 0),
                 "gas_used": receipt.get("gasUsed", 0),
@@ -327,141 +304,133 @@ class VirtualUniverse:
                 "ts": datetime.now(timezone.utc).isoformat(),
                 "onchain": True,
             }
-            self.transactions.append(tx_info)
-            if len(self.transactions) > 100:
-                self.transactions = self.transactions[-100:]
+        )
+        if len(self.transactions) > 100:
+            self.transactions = self.transactions[-100:]
 
-            self.chain_analytics["tx_count"] += 1
-            self.chain_analytics["gas_spent"] += receipt.get("gasUsed", 0)
-
-            return tx_info
-        except Exception:
-            return None
-
-    # ------------------------------------------------------------------
-    # Entity seeding
-    # ------------------------------------------------------------------
+    def _save_config(self):
+        config = {
+            "evm_rpc": self.evm_rpc,
+            "evm_usdt": self.evm_usdt_address,
+            "evm_escrow": self.evm_escrow_address,
+            "evm_nft": self.evm_nft_address,
+            "payment_recipient": self.payment_recipient,
+            "chain_id": 31337,
+            "chain_label": self.chain_label,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        (self.data_dir / "universe_config.json").write_text(json.dumps(config, indent=2))
 
     def seed_entities(self):
-        hub = VirtualEntity("hub", "AIMarket Hub", "core", "core")
-        hub.position = {"x": 0, "y": 0, "z": 0}
-        hub.metrics = {"peers": 5, "capabilities": 150, "channels_open": 34, "invocations_24h": 420}
-        self.entities["hub"] = hub
+        """Seed topology skeleton — metrics filled on first tick from live layers."""
+        from universe_layers import layer_urls
 
-        factory = VirtualEntity("factory", "AI-Factory", "core", "core")
-        factory.position = {"x": 4, "y": 2, "z": -2}
-        factory.metrics = {"products": 89, "tasks_pending": 7, "tasks_done": 450}
-        self.entities["factory"] = factory
-
-        mesh = VirtualEntity("mesh", "AI Service Mesh", "core", "core")
-        mesh.position = {"x": -4, "y": -1, "z": 2}
-        mesh.metrics = {"agents": 23, "tasks": 120, "activity": 890}
-        self.entities["mesh"] = mesh
-
-        acex = VirtualEntity("acex", "ACEX", "core", "core")
-        acex.position = {"x": 2, "y": -3, "z": 4}
-        acex.metrics = {"volume_24h": 12000, "listings": 45}
-        self.entities["acex"] = acex
-
-        for cid, cname, cpos in [
-            ("evm_escrow", "EVM Escrow", {"x": 6, "y": 3, "z": 1}),
-            ("solana_escrow", "Solana Escrow", {"x": 5, "y": -2, "z": -3}),
-            ("nft_contract", "Capability NFT", {"x": 7, "y": 0, "z": -1}),
-        ]:
-            ent = VirtualEntity(cid, cname, "contract", "contract")
-            ent.position = cpos
-            ent.metrics = {
-                "channels": random.randint(10, 50),
-                "tvl": random.randint(10000, 100000),
-            }
-            if cid == "evm_escrow":
-                ent.metrics["address"] = self.evm_usdt_address or "0xB2" * 20
-                ent.metrics["chain"] = "anvil-31337"
-            self.entities[cid] = ent
-
-        desktop = VirtualEntity("desktop_apps", "Desktop Apps", "client", "client")
-        desktop.position = {"x": -3, "y": 4, "z": -4}
-        desktop.metrics = {"apps_online": 5, "total_apps": 9}
-        self.entities["desktop_apps"] = desktop
-
-        plugins = VirtualEntity("plugins", "Plugins", "infra", "infra")
-        plugins.position = {"x": 0, "y": -5, "z": -3}
-        plugins.metrics = {"loaded": 13, "total": 15}
-        self.entities["plugins"] = plugins
-
-        for sid, sname, spos in [
-            ("sdk_dart", "Dart SDK", {"x": -5, "y": 1, "z": 5}),
-            ("sdk_typescript", "TypeScript SDK", {"x": -6, "y": -1, "z": 4}),
-            ("sdk_rust", "Rust SDK", {"x": -5, "y": 2, "z": -5}),
-        ]:
-            ent = VirtualEntity(sid, sname, "sdk", "sdk")
-            ent.position = spos
-            self.entities[sid] = ent
-
-        for eid, ename, egroup, epos in [
-            ("federation", "Federation", "network", {"x": -2, "y": 5, "z": 1}),
-            ("widget", "Widget", "client", {"x": 3, "y": 5, "z": -2}),
-            ("ethereum", "Anvil L1", "chain", {"x": 8, "y": 3, "z": 3}),
-            ("solana", "Solana", "chain", {"x": 8, "y": -2, "z": -4}),
-            ("cli", "CLI Tools", "client", {"x": -3, "y": -4, "z": 5}),
-        ]:
-            ent = VirtualEntity(eid, ename, egroup, egroup)
-            ent.position = epos
-            if eid == "ethereum":
-                ent.metrics = {"chain_id": 31337, "block": 0, "gas": 0, "tx_count": 0}
+        urls = layer_urls()
+        specs = [
+            ("hub", "AIMarket Hub", "core", "core", "hub", {"x": 0, "y": 0, "z": 0}, urls["hub"]),
+            ("factory", "AI-Factory", "core", "core", "factory", {"x": 4, "y": 2, "z": -2}, urls["app"]),
+            ("mesh", "AI Service Mesh", "core", "core", "mesh", {"x": -4, "y": -1, "z": 2}, urls["mesh"]),
+            ("acex", "ACEX", "core", "core", "exchange", {"x": 2, "y": -3, "z": 4}, None),
+            ("evm_escrow", "EVM Escrow", "contract", "contract", "contract", {"x": 6, "y": 3, "z": 1}, None),
+            ("solana_escrow", "Solana Escrow", "contract", "contract", "contract", {"x": 5, "y": -2, "z": -3}, None),
+            ("nft_contract", "Capability NFT", "contract", "contract", "contract", {"x": 7, "y": 0, "z": -1}, None),
+            ("desktop_apps", "Desktop Apps", "client", "client", "client", {"x": -3, "y": 4, "z": -4}, None),
+            ("plugins", "Plugins", "infra", "infra", "infra", {"x": 0, "y": -5, "z": -3}, None),
+            ("sdk_dart", "Dart SDK", "sdk", "sdk", "sdk", {"x": -5, "y": 1, "z": 5}, None),
+            ("sdk_typescript", "TypeScript SDK", "sdk", "sdk", "sdk", {"x": -6, "y": -1, "z": 4}, None),
+            ("sdk_rust", "Rust SDK", "sdk", "sdk", "sdk", {"x": -5, "y": 2, "z": -5}, None),
+            ("federation", "Federation", "network", "network", "network", {"x": -2, "y": 5, "z": 1}, None),
+            ("widget", "Widget", "client", "client", "client", {"x": 3, "y": 5, "z": -2}, None),
+            ("ethereum", self.chain_label, "chain", "chain", "chain", {"x": 8, "y": 3, "z": 3}, self.evm_rpc),
+            ("solana", "Solana", "chain", "chain", "chain", {"x": 8, "y": -2, "z": -4}, self.solana_rpc),
+            ("cli", "CLI Tools", "client", "client", "client", {"x": -3, "y": -4, "z": 5}, None),
+        ]
+        for eid, name, etype, group, icon, pos, url in specs:
+            ent = EcosystemEntity(eid, name, etype, group, icon=icon)
+            ent.position = pos
+            ent.url = url
+            ent.metrics = {}
             self.entities[eid] = ent
+        print(f"[Universe] {len(self.entities)} core nodes ready — awaiting layer poll")
 
-        for i, name in enumerate(AGENT_NAMES[:8]):
-            agent = VirtualEntity(f"agent_{i}", name, "agent", "agent")
-            agent.position = {
-                "x": random.uniform(-6, 6),
-                "y": random.uniform(-4, 4),
-                "z": random.uniform(-4, 4),
-            }
-            agent.metrics = {
-                "balance_eth": round(random.uniform(100, 500), 2),
-                "channels_open": random.randint(0, 5),
-                "invocations": random.randint(0, 50),
-            }
-            self.entities[agent.id] = agent
-            self.agents.append({
-                "id": agent.id, "name": name,
-                "balance": agent.metrics["balance_eth"],
+    def sync_factory_catalog(self, app_url: str | None = None) -> int:
+        """Import shipped products from Factory API as product planets (idempotent)."""
+        from factory_products import fetch_factory_products_sync
+
+        url = app_url or os.environ.get("AICOM_API_URL", "http://127.0.0.1:9081")
+        catalog = fetch_factory_products_sync(url)
+        catalog_ids = {str(p.get("id") or "") for p in catalog if p.get("id")}
+
+        # Drop product nodes removed from Factory (keeps core infra entities).
+        for eid in list(self.entities.keys()):
+            ent = self.entities[eid]
+            if ent.group == "product" and eid not in catalog_ids:
+                del self.entities[eid]
+        if catalog_ids:
+            self.products = [n for n in self.products if str(n.get("id") or "") in catalog_ids]
+        elif len(self.products) > _MAX_PRODUCT_ENTITIES:
+            self.products = self.products[-_MAX_PRODUCT_ENTITIES:]
+
+        added = 0
+        for p in catalog:
+            pid = str(p.get("id") or "")
+            if not pid or pid in self.entities:
+                continue
+            self.materialize_product({
+                "id": pid,
+                "name": p.get("name"),
+                "category": p.get("category"),
+                "description": p.get("description") or p.get("tagline"),
+                "version": p.get("version"),
             })
+            added += 1
 
-        print(f"[Universe] {len(self.entities)} entities, {len(self.agents)} agents seeded")
+        if len(self.entities) > _MAX_PRODUCT_ENTITIES + 20:
+            product_eids = [eid for eid, ent in self.entities.items() if ent.group == "product"]
+            if len(product_eids) > _MAX_PRODUCT_ENTITIES:
+                for eid in product_eids[: len(product_eids) - _MAX_PRODUCT_ENTITIES]:
+                    self.entities.pop(eid, None)
+                self.products = self.products[-_MAX_PRODUCT_ENTITIES:]
 
-    # ------------------------------------------------------------------
-    # Product materialization
-    # ------------------------------------------------------------------
+        factory = self.entities.get("factory")
+        if factory:
+            factory.metrics["products"] = len(self.products)
+        return added
 
-    def materialize_product(self, product_data: dict) -> VirtualEntity:
-        pid = product_data.get("id", f"product_{self.tick}_{random.randint(1000,9999)}")
-        name = product_data.get("name", f"Product-{self.tick}")
-        ptype = product_data.get("type", product_data.get("category", "fullstack-app"))
-        entity = VirtualEntity(pid, name, ptype, "product")
+    def materialize_product(self, product_data: dict) -> EcosystemEntity:
+        pid = str(product_data.get("id") or f"product_{self.tick}_{len(self.products)}")
+        name = str(product_data.get("name") or f"Product-{self.tick}")
+        ptype = str(product_data.get("type") or product_data.get("category") or "fullstack-app")
+        entity = EcosystemEntity(pid, name, ptype, "product", icon="planet")
         entity.parent_id = "factory"
         entity.metrics = {
             "version": product_data.get("version", "0.1.0"),
-            "price_usdt": product_data.get("price", round(random.uniform(0.5, 50), 2)),
+            "price_usdt": product_data.get("price", 0),
             "invocations": 0,
         }
-        fp = self.entities.get("factory", None)
+        entity.status = "active"
+        fp = self.entities.get("factory")
         if fp:
             entity.position = {
-                "x": fp.position["x"] + random.uniform(-3, 3),
-                "y": fp.position["y"] + random.uniform(-2, 2),
-                "z": fp.position["z"] + random.uniform(-2, 2),
+                "x": fp.position["x"] + 2,
+                "y": fp.position["y"] + 1,
+                "z": fp.position["z"],
             }
         self.entities[pid] = entity
-        self.products.append(entity.to_node())
-        self._pending_materializations.append({
-            "type": "product_materialized",
-            "id": pid, "name": name, "category": ptype,
-            "ts": datetime.now(timezone.utc).isoformat(),
-            "position": entity.position, "color": entity.color,
-        })
-        print(f"[Universe] +product: {name} ({ptype})")
+        node = entity.to_node()
+        if not any(str(p.get("id") or "") == pid for p in self.products):
+            self.products.append(node)
+        self._pending_materializations.append(
+            {
+                "type": "product_materialized",
+                "id": pid,
+                "name": name,
+                "category": ptype,
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "position": entity.position,
+                "color": entity.color,
+            }
+        )
         return entity
 
     def get_pending_materializations(self) -> list[dict]:
@@ -469,111 +438,115 @@ class VirtualUniverse:
         self._pending_materializations.clear()
         return events
 
-    # ------------------------------------------------------------------
-    # Tick — advance the universe + execute real on-chain transactions
-    # ------------------------------------------------------------------
-
     def tick_universe(self) -> dict:
+        from universe_layers import (
+            apply_layers_to_entities,
+            build_universe_summary,
+            fetch_layers_sync,
+            sync_agent_entities,
+        )
+
         self.tick += 1
-        t = self.tick
 
-        # Execute REAL on-chain transaction every 2 ticks
-        if self.blockchain_ready and t % 2 == 0:
-            self._execute_random_tx()
+        contracts = {
+            "escrow_evm": self.evm_escrow_address,
+            "nft_evm": self.evm_nft_address,
+            "payment_recipient": self.payment_recipient,
+        }
+        layers = fetch_layers_sync(
+            evm_rpc=self.evm_rpc,
+            contracts=contracts,
+            chain_label=self.chain_label,
+        )
+        self._last_layers = layers
 
-        # Update blockchain analytics
-        if self.blockchain_ready and t % 3 == 0:
+        apply_layers_to_entities(self.entities, layers)
+        sync_agent_entities(self.entities, layers.get("agents") or [], self.agents)
+        if self.tick == 1 or self.tick % max(1, self._factory_sync_every_ticks) == 0:
+            self.sync_factory_catalog()
+
+        if self.blockchain_ready:
             self._fetch_chain_state()
-            if "ethereum" in self.entities:
-                self.entities["ethereum"].metrics = {
-                    "chain_id": 31337,
-                    "block": self.chain_analytics["blocks"],
-                    "gas": self.chain_analytics["gas_spent"],
-                    "tx_count": self.chain_analytics["tx_count"],
-                }
 
-        # Update hub metrics
-        hub = self.entities.get("hub")
-        if hub:
-            hub.metrics["invocations_24h"] = 400 + t * 10 + random.randint(-20, 30)
-            hub.metrics["channels_open"] = 30 + (t % 20) + random.randint(0, 5)
-
-        # Update factory
-        factory = self.entities.get("factory")
-        if factory:
-            factory.metrics["products"] = 89 + t + len(self.products)
-            factory.metrics["tasks_pending"] = random.randint(3, 15)
-
-        # Update other entities
-        for eid, ent in self.entities.items():
-            if eid == "mesh":
-                ent.metrics["activity"] = 800 + t * 20 + random.randint(-30, 50)
-            elif eid == "acex":
-                ent.metrics["volume_24h"] = 10000 + t * 800 + random.randint(-1000, 3000)
-            elif eid.startswith("agent_"):
-                ent.metrics["invocations"] = ent.metrics.get("invocations", 0) + random.randint(0, 2)
-
-        # Generate virtual events (non-chain)
-        if t % 3 == 0:
-            self.events.append({
-                "id": f"evt_{t}_{len(self.events)}",
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "agent": random.choice(AGENT_NAMES[:8]),
-                "action": random.choice(["invoke", "discover", "channel_open", "channel_close", "settle"]),
-                "target": random.choice(["hub", "mesh", "factory", "evm_escrow"]),
-                "amount": round(random.uniform(0.05, 25.0), 2),
-                "token": "USDT",
-            })
-            if len(self.events) > 200:
-                self.events = self.events[-200:]
-
-        # Merge on-chain txs + virtual events for the activity stream
+        onchain_activity = [
+            {
+                "id": tx["id"],
+                "ts": tx["ts"],
+                "agent": tx.get("from", "")[:12],
+                "action": tx.get("action", "tx"),
+                "target": tx.get("target", ""),
+                "amount": tx.get("amount", 0),
+                "token": tx.get("token", "ETH"),
+                "onchain": True,
+            }
+            for tx in self.transactions[-20:]
+        ]
+        hub_events = layers.get("events") or []
         all_activity = sorted(
-            self.transactions[-20:] + self.events[-20:],
+            onchain_activity + hub_events,
             key=lambda x: x.get("ts", ""),
             reverse=True,
         )[:20]
 
-        nodes = [ent.to_node() for ent in self.entities.values()]
+        # Scenario engine tick — drives autonomous evolution
+        scenario_output = self._tick_scenario()
 
-        links = self.get_topology_links()
+        # Merge scenario events into activity feed
+        scenario_events = scenario_output.get("events") or []
+        if scenario_events:
+            all_activity = sorted(
+                all_activity + scenario_events,
+                key=lambda x: x.get("ts", ""),
+                reverse=True,
+            )[:30]
+
+        summary = build_universe_summary(
+            tick=self.tick,
+            layers=layers,
+            agents_count=len(self.agents),
+            products_count=len(self.products),
+            onchain_tx_count=len(self.transactions),
+        )
+        summary["scenario_phase"] = scenario_output.get("phase", "BOOTSTRAP")
+
+        from factory_products import collapse_graph_products
+
+        raw_nodes = [ent.to_node() for ent in self.entities.values()]
+        raw_links = self.get_topology_links()
+        graph_nodes, graph_links = collapse_graph_products(raw_nodes, raw_links)
 
         return {
-            "tick": t,
+            "tick": self.tick,
             "ts": datetime.now(timezone.utc).isoformat(),
-            "nodes": nodes,
-            "links": links,
+            "nodes": graph_nodes,
+            "links": graph_links,
             "events": all_activity,
             "transactions": self.transactions[-20:],
-            "channels": self.channels[-10:],
-            "summary": self._build_summary(),
+            "channels": [],
+            "summary": summary,
             "materializations": self.get_pending_materializations(),
             "chain_analytics": self.chain_analytics,
+            "layer_errors": layers.get("errors") or [],
+            "scenario": {
+                "phase": scenario_output["phase"],
+                "phase_progress": scenario_output["phase_progress"],
+                "phase_color": scenario_output["phase_color"],
+                "tick_count": scenario_output["tick_count"],
+                "funding_total": scenario_output["funding_total"],
+                "hub_count": scenario_output["hub_count"],
+                "buyer_rounds": scenario_output["buyer_rounds"],
+            },
+            "funding_events": [
+                e for e in scenario_events if e.get("type") == "funding_stream"
+            ],
         }
 
-    def _build_summary(self) -> dict:
-        hub = self.entities.get("hub", None)
-        acex = self.entities.get("acex", None)
-        eth = self.entities.get("ethereum", None)
-        return {
-            "total_invocations_24h": hub.metrics.get("invocations_24h", 0) if hub else 0,
-            "total_volume_usd": acex.metrics.get("volume_24h", 0) if acex else 0,
-            "active_channels": hub.metrics.get("channels_open", 0) if hub else 0,
-            "tvl_usd": 50000 + self.tick * 500,
-            "agents_online": len(self.agents),
-            "apps_online": 5,
-            "tps_solana": random.randint(1200, 3500),
-            "gas_gwei": self.chain_analytics.get("gas_spent", 0),
-            "block_number": self.chain_analytics.get("blocks", 0),
-            "onchain_tx_count": self.chain_analytics.get("tx_count", 0),
-            "mode": "universe",
-            "tick": self.tick,
-            "blockchain_ready": self.blockchain_ready,
-            "products_created": len(self.products),
-            "entities_total": len(self.entities),
-            "evm_rpc": self.evm_rpc,
-            "usdt_contract": self.evm_usdt_address,
-        }
+    def _tick_scenario(self) -> dict:
+        if self._scenario_engine is None:
+            hub_url = os.environ.get("ALIEN_UNIVERSE_HUB_URL") or os.environ.get("HUB_URL") or "http://127.0.0.1:9083"
+            from universe_scenario import UniverseScenarioEngine
+            self._scenario_engine = UniverseScenarioEngine(hub_url=hub_url)
+        return self._scenario_engine.tick(self)
 
     def get_topology_links(self) -> list[dict]:
         links = [
@@ -586,11 +559,6 @@ class VirtualUniverse:
             {"source": "hub", "target": "plugins", "label": "Plugin hooks"},
             {"source": "hub", "target": "federation", "label": "Peer crawl"},
             {"source": "hub", "target": "widget", "label": "Search API"},
-            {"source": "hub", "target": "sdk_dart", "label": "REST API"},
-            {"source": "hub", "target": "sdk_typescript", "label": "REST API"},
-            {"source": "hub", "target": "sdk_rust", "label": "REST API"},
-            {"source": "desktop_apps", "target": "sdk_dart", "label": "Dart SDK"},
-            {"source": "cli", "target": "hub", "label": "CLI"},
             {"source": "factory", "target": "mesh", "label": "Orchestration"},
             {"source": "evm_escrow", "target": "ethereum", "label": "EVM RPC"},
             {"source": "solana_escrow", "target": "solana", "label": "Solana RPC"},
@@ -598,4 +566,6 @@ class VirtualUniverse:
         ]
         for prod in self.products:
             links.append({"source": "factory", "target": prod["id"], "label": "created"})
+        for ag in self.agents:
+            links.append({"source": "mesh", "target": ag["id"], "label": "registered"})
         return links

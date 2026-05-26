@@ -34,7 +34,7 @@ Usage:
 
 Options:
   --real            Connect to live infrastructure (hub, mesh, prometheus)
-  --universe        Virtual Universe mode (embedded blockchain + entities)
+  --universe        UNI mode (local chain + live Hub/Mesh/Factory polls)
   --with-infra      Start test blockchain (Ganache + Solana validator)
   --backend-only    Start only the backend server
   --frontend-only   Start only the frontend dev server
@@ -43,7 +43,7 @@ Options:
 
 Examples:
   ./start.sh                          # Test mode with simulated data
-  ./start.sh --universe               # Virtual universe with embedded blockchain
+  ./start.sh --universe               # UNI: local chain + live ecosystem layers
   ./start.sh --with-infra             # Test mode + real blockchain infra
   ./start.sh --real                   # Connect to live AIMarket infra
 EOF
@@ -166,10 +166,14 @@ echo "Backend PID: $BACKEND_PID"
 sleep 2
 
 if [ "$MODE" = "universe" ]; then
-  echo "Bootstrapping virtual universe (Anvil + entities)..."
-  curl -sf -X POST "http://localhost:${BACKEND_PORT}/api/universe/start" >/dev/null \
-    && echo "Universe: OK (embedded chain + 25 entities)" \
-    || echo "WARNING: universe/start failed — run: curl -X POST http://localhost:${BACKEND_PORT}/api/universe/start"
+  echo "Bootstrapping UNI ecosystem (local chain + live layers)..."
+  _uni_auth=()
+  if [ -n "${ALIEN_API_TOKEN:-}" ]; then
+    _uni_auth=(-H "Authorization: Bearer ${ALIEN_API_TOKEN}")
+  fi
+  curl -sf -X POST "${_uni_auth[@]}" "http://localhost:${BACKEND_PORT}/api/universe/start" >/dev/null \
+    && echo "UNI: OK (chain + layer polling)" \
+    || echo "WARNING: universe/start failed — set ALIEN_API_TOKEN and: curl -X POST -H \"Authorization: Bearer \$ALIEN_API_TOKEN\" http://localhost:${BACKEND_PORT}/api/universe/start"
 fi
 
 # ── 5. Start frontend ──────────────────────────────────────────────────────

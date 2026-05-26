@@ -1,9 +1,11 @@
-# Production Alien Monitor on the AI-Factory host (nginx → /monitor/)
+# Production ecosystem demos on the AI-Factory host (nginx → /monitor/ and /pulse/)
 #
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
 # Requires Hub (:9083), Factory API (:9081), Prometheus (:9090) on the host.
-# Uses host network so 127.0.0.1 targets work; binds API to 127.0.0.1:9100 only.
+# Uses host network so 127.0.0.1 targets work:
+#   Alien Monitor API  → 127.0.0.1:9100
+#   Pulse Terminal UI  → 127.0.0.1:5199
 
 services:
   alien-monitor:
@@ -12,6 +14,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_BASE_PATH: ${ALIEN_MONITOR_BASE_PATH:-/monitor/}
+        VITE_ALIEN_API_TOKEN: ${ALIEN_API_TOKEN:-}
     container_name: alien-monitor
     network_mode: host
     restart: unless-stopped
@@ -26,3 +29,18 @@ services:
       MESH_URL: ${MESH_URL:-http://127.0.0.1:8090}
       AICOM_API_URL: ${AICOM_API_URL:-http://127.0.0.1:9081}
       PROMETHEUS_URL: ${PROMETHEUS_URL:-http://127.0.0.1:9090}
+      # DEEPSEEK_API_KEY comes from env_file ../.env only (do not override with empty ${...})
+      ALIEN_LLM_CONFIG: ${ALIEN_LLM_CONFIG:-/app/llm/model_providers.yaml}
+      ALIEN_API_TOKEN: ${ALIEN_API_TOKEN:-}
+    volumes:
+      - ../data/config/model_providers.yaml:/app/llm/model_providers.yaml:ro
+
+  pulse-terminal:
+    build:
+      context: ../apps/pulse-terminal
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: ${PULSE_TERMINAL_BASE_PATH:-/pulse/}
+    container_name: pulse-terminal
+    network_mode: host
+    restart: unless-stopped

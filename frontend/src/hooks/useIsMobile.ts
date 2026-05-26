@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 
-/** Match Tailwind `md` breakpoint (768px). */
-export function useIsMobile(breakpointPx = 768) {
+const MQ = '(max-width: 767px)';
+
+/** True when viewport is below Tailwind `md` (768px). */
+export function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < breakpointPx : false,
+    typeof window !== 'undefined' ? window.matchMedia(MQ).matches : false,
   );
 
   useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, [breakpointPx]);
+    const mq = window.matchMedia(MQ);
+    const onChange = () => setMobile(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   return mobile;
 }

@@ -1,0 +1,151 @@
+{
+  "app": {
+    "title": "ALIEN MONITOR",
+    "connecting": "Conectando al ecosistema…"
+  },
+  "mode": {
+    "simulation": "SIMULACIÓN",
+    "live": "RED EN VIVO",
+    "universe": "MODO UNI",
+    "footerSimulation": "SIMULACIÓN",
+    "footerLive": "RED EN VIVO",
+    "footerUniverse": "UNI · {{phase}}"
+  },
+  "metrics": {
+    "invocations": "Invocaciones",
+    "volume24h": "Volumen 24h",
+    "channels": "Canales",
+    "tvl": "TVL",
+    "agents": "Agentes",
+    "apps": "Apps",
+    "block": "BLOQUE",
+    "onchainTx": "TX ON-CHAIN",
+    "gasUsed": "GAS",
+    "solanaTps": "Solana TPS",
+    "ethGas": "Gas ETH",
+    "phase": "FASE",
+    "funding": "FONDOS",
+    "buyerRnd": "RONDAS",
+    "hubs": "HUBS"
+  },
+  "controls": {
+    "test": "TEST",
+    "live": "LIVE",
+    "uni": "UNI",
+    "ai": "AI",
+    "aiHint": "Abrir asistente AI (contexto en vivo)",
+    "log": "LOG",
+    "pulse": "PULSE",
+    "language": "Idioma"
+  },
+  "nodeDetail": {
+    "metrics": "Métricas",
+    "subcomponents": "Subcomponentes ({{count}})",
+    "metricKeys": {
+      "invocations_24h": "invocaciones 24h",
+      "channels_open": "canales abiertos",
+      "capabilities": "capacidades",
+      "peers": "peers",
+      "agents": "agentes",
+      "tasks": "tareas",
+      "activity": "actividad",
+      "tasks_done": "tareas hechas",
+      "tasks_pending": "tareas pendientes",
+      "products": "productos",
+      "loaded": "cargados",
+      "total": "total",
+      "volume_24h": "volumen 24h",
+      "chain_id": "chain id",
+      "block": "bloque",
+      "gas": "gas",
+      "tx_count": "transacciones",
+      "slot": "slot",
+      "block_height": "altura",
+      "tps": "tps",
+      "rpc": "rpc",
+      "escrow_balance": "saldo escrow",
+      "nft_supply": "suministro NFT",
+      "invocations": "invocaciones",
+      "channels_open_agent": "canales",
+      "balance_eth": "saldo ETH",
+      "verified": "verificado"
+    }
+  },
+  "status": {
+    "active": "activo",
+    "idle": "inactivo",
+    "error": "error",
+    "unknown": "desconocido"
+  },
+  "group": {
+    "core": "núcleo",
+    "contract": "contrato",
+    "client": "cliente",
+    "sdk": "sdk",
+    "infra": "infra",
+    "network": "red",
+    "chain": "cadena",
+    "agent": "agente",
+    "product": "producto",
+    "cluster": "cúmulo"
+  },
+  "activity": {
+    "title": "Flujo de actividad",
+    "show": "Mostrar actividad",
+    "external": "EXTERNO",
+    "fundingTarget": "financiación del ecosistema"
+  },
+  "ai": {
+    "title": "ASISTENTE AI",
+    "welcome": "Soy tu navegador del mapa 3D: veo tick, modo, nodos y cúmulos de productos junto a Factory. Pregunta adónde volar, qué es un cúmulo o qué hay en LIVE/UNI.",
+    "placeholder": "Pregunta sobre el ecosistema…",
+    "send": "ENVIAR",
+    "offline": "No se pudo contactar al AI. El backend puede estar fuera de línea.",
+    "error": "Error en la solicitud al AI",
+    "timeout": "El AI sigue pensando — inténtalo de nuevo en un momento.",
+    "provider": "Modelo",
+    "modelHeavy": "Pro",
+    "modelLight": "Flash",
+    "liveContext": "Instantánea · tick {{tick}}",
+    "suggestions": {
+      "hub": "¿Qué es AIMarket Hub?",
+      "now": "¿Qué está pasando ahora en el monitor?",
+      "channels": "¿Cómo funcionan los canales de pago?",
+      "plugins": "Explica el sistema de plugins",
+      "desktop": "¿Qué apps de escritorio existen?",
+      "acex": "¿Cómo funciona ACEX?",
+      "blockchains": "¿Qué blockchains se admiten?",
+      "factory": "¿Dónde están los productos de la fábrica en el mapa?",
+      "navigate": "¿A dónde acercarme para ver el catálogo?"
+    },
+    "voice": {
+      "dictation": "Entrada por voz",
+      "stopDictation": "Detener grabación",
+      "unavailable": "La entrada por voz no está disponible en este navegador. Pruebe Chrome, Edge o Samsung Internet.",
+      "micStartError": "No se pudo iniciar el reconocimiento de voz",
+      "micRecognitionDenied": "Se necesita acceso al micrófono. Permítalo en la configuración del sitio y recargue.",
+      "micNeedsHttps": "El micrófono solo funciona en HTTPS o localhost.",
+      "micNoMediaDevices": "Este navegador no admite acceso al micrófono. Pruebe Chrome o Edge.",
+      "micPermBlocked": "El micrófono está bloqueado para este sitio. Permítalo y recargue.",
+      "micDeniedShort": "Se denegó el acceso al micrófono.",
+      "micDeviceBusy": "Micrófono no disponible u ocupado en otra app."
+    }
+  },
+  "mobile": {
+    "dockLabel": "Navegación del monitor",
+    "graph": "Grafo",
+    "settings": "Ajustes",
+    "settingsTitle": "Controles",
+    "node": "Nodo",
+    "ai": "IA",
+    "log": "Log",
+    "closeSheet": "Cerrar panel"
+  },
+  "tick": "TICK #{{n}}",
+  "scenario": {
+    "BOOTSTRAP": "ARRANQUE",
+    "EXPANSION": "EXPANSIÓN",
+    "FEDERATION": "FEDERACIÓN",
+    "MATURITY": "MADUREZ"
+  }
+}

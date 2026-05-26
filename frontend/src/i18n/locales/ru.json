@@ -1,0 +1,151 @@
+{
+  "app": {
+    "title": "ALIEN MONITOR",
+    "connecting": "Подключение к экосистеме…"
+  },
+  "mode": {
+    "simulation": "СИМУЛЯЦИЯ",
+    "live": "ЖИВАЯ СЕТЬ",
+    "universe": "РЕЖИМ UNI",
+    "footerSimulation": "СИМУЛЯЦИЯ",
+    "footerLive": "ЖИВАЯ СЕТЬ",
+    "footerUniverse": "UNI · {{phase}}"
+  },
+  "metrics": {
+    "invocations": "Вызовы",
+    "volume24h": "Объём 24ч",
+    "channels": "Каналы",
+    "tvl": "TVL",
+    "agents": "Агенты",
+    "apps": "Приложения",
+    "block": "БЛОК",
+    "onchainTx": "ON-CHAIN TX",
+    "gasUsed": "ГАЗ",
+    "solanaTps": "Solana TPS",
+    "ethGas": "ETH Gas",
+    "phase": "ФАЗА",
+    "funding": "ФИНАНСИР.",
+    "buyerRnd": "РАУНДЫ",
+    "hubs": "ХАБЫ"
+  },
+  "controls": {
+    "test": "TEST",
+    "live": "LIVE",
+    "uni": "UNI",
+    "ai": "AI",
+    "aiHint": "Открыть AI-помощника (живой контекст экосистемы)",
+    "log": "LOG",
+    "pulse": "PULSE",
+    "language": "Язык"
+  },
+  "nodeDetail": {
+    "metrics": "Метрики",
+    "subcomponents": "Подкомпоненты ({{count}})",
+    "metricKeys": {
+      "invocations_24h": "вызовы за 24ч",
+      "channels_open": "открытые каналы",
+      "capabilities": "возможности",
+      "peers": "пиры",
+      "agents": "агенты",
+      "tasks": "задачи",
+      "activity": "активность",
+      "tasks_done": "задач выполнено",
+      "tasks_pending": "задач в очереди",
+      "products": "продукты",
+      "loaded": "загружено",
+      "total": "всего",
+      "volume_24h": "объём 24ч",
+      "chain_id": "chain id",
+      "block": "блок",
+      "gas": "газ",
+      "tx_count": "транзакций",
+      "slot": "слот",
+      "block_height": "высота блока",
+      "tps": "tps",
+      "rpc": "rpc",
+      "escrow_balance": "баланс эскроу",
+      "nft_supply": "выпуск NFT",
+      "invocations": "вызовы",
+      "channels_open_agent": "каналы",
+      "balance_eth": "баланс ETH",
+      "verified": "верифицирован"
+    }
+  },
+  "status": {
+    "active": "активен",
+    "idle": "ожидание",
+    "error": "ошибка",
+    "unknown": "неизвестно"
+  },
+  "group": {
+    "core": "ядро",
+    "contract": "контракт",
+    "client": "клиент",
+    "sdk": "sdk",
+    "infra": "инфра",
+    "network": "сеть",
+    "chain": "чейн",
+    "agent": "агент",
+    "product": "продукт",
+    "cluster": "скопление"
+  },
+  "activity": {
+    "title": "Поток активности",
+    "show": "Показать активность",
+    "external": "ВНЕШН.",
+    "fundingTarget": "финансирование экосистемы"
+  },
+  "ai": {
+    "title": "AI ПОМОЩНИК",
+    "welcome": "Я навигатор по 3D-карте: вижу tick, режим, ноды и скопления продуктов у Factory. Спросите «куда лететь», «что за скопление» или что сейчас в LIVE/UNI.",
+    "placeholder": "Спросите об экосистеме…",
+    "send": "ОТПРАВИТЬ",
+    "offline": "Не удалось связаться с AI. Возможно, бэкенд недоступен.",
+    "error": "Ошибка запроса к AI",
+    "timeout": "AI ещё думает — подождите и попробуйте снова.",
+    "provider": "Модель",
+    "modelHeavy": "Pro",
+    "modelLight": "Flash",
+    "liveContext": "Живой срез · тик {{tick}}",
+    "suggestions": {
+      "hub": "Что такое AIMarket Hub?",
+      "now": "Что сейчас происходит в мониторе?",
+      "channels": "Как работают платёжные каналы?",
+      "plugins": "Объясни систему плагинов",
+      "desktop": "Какие десктопные приложения есть?",
+      "acex": "Как работает ACEX?",
+      "blockchains": "Какие блокчейны поддерживаются?",
+      "factory": "Где продукты фабрики на карте?",
+      "navigate": "Куда приблизиться, чтобы увидеть каталог?"
+    },
+    "voice": {
+      "dictation": "Голосовой ввод",
+      "stopDictation": "Остановить запись",
+      "unavailable": "Голосовой ввод недоступен в этом браузере. Используйте Chrome, Edge или Samsung Internet.",
+      "micStartError": "Не удалось запустить распознавание речи",
+      "micRecognitionDenied": "Нужен доступ к микрофону. Разрешите микрофон в настройках сайта и перезагрузите страницу.",
+      "micNeedsHttps": "Микрофон работает только на HTTPS или localhost.",
+      "micNoMediaDevices": "Браузер не поддерживает доступ к микрофону. Попробуйте Chrome или Edge.",
+      "micPermBlocked": "Микрофон заблокирован для этого сайта. Разрешите в настройках и перезагрузите.",
+      "micDeniedShort": "Доступ к микрофону отклонён.",
+      "micDeviceBusy": "Микрофон занят или недоступен."
+    }
+  },
+  "mobile": {
+    "dockLabel": "Навигация монитора",
+    "graph": "Граф",
+    "settings": "Настройки",
+    "settingsTitle": "Управление",
+    "node": "Узел",
+    "ai": "ИИ",
+    "log": "Лог",
+    "closeSheet": "Закрыть панель"
+  },
+  "tick": "ТИК #{{n}}",
+  "scenario": {
+    "BOOTSTRAP": "СТАРТ",
+    "EXPANSION": "РОСТ",
+    "FEDERATION": "ФЕДЕРАЦИЯ",
+    "MATURITY": "ЗРЕЛОСТЬ"
+  }
+}

@@ -7,6 +7,8 @@ export function useWebSocket(
   onStateUpdate: (state: any) => void,
 ) {
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unmountedRef = useRef(false);
   const modeRef = useRef<Mode>(mode);
   modeRef.current = mode;
 
@@ -17,16 +19,17 @@ export function useWebSocket(
   }, [mode]);
 
   useEffect(() => {
+    unmountedRef.current = false;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
     const wsUrl = `${protocol}//${window.location.host}${basePath}/ws`;
 
     function connect() {
+      if (unmountedRef.current) return;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send current mode preference
         ws.send(JSON.stringify({ cmd: 'set_mode', mode: modeRef.current }));
       };
 
@@ -42,8 +45,9 @@ export function useWebSocket(
       };
 
       ws.onclose = () => {
-        // Reconnect after 2 seconds
-        setTimeout(connect, 2000);
+        wsRef.current = null;
+        if (unmountedRef.current) return;
+        reconnectTimerRef.current = setTimeout(connect, 2000);
       };
 
       ws.onerror = () => {
@@ -54,6 +58,11 @@ export function useWebSocket(
     connect();
 
     return () => {
+      unmountedRef.current = true;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
@@ -7,6 +7,7 @@ import {
   Html,
   Stars,
 } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { EcoNode, EcoLink, EcosystemState } from '../App';
@@ -23,6 +24,9 @@ const GROUP_COLORS: Record<string, string> = {
   sdk: '#ffdd00',
   network: '#3366ff',
   chain: '#ff6633',
+  product: '#ffaa44',
+  cluster: '#ffcc66',
+  agent: '#66ffcc',
 };
 
 const GROUP_EMISSIVE: Record<string, string> = {
@@ -33,6 +37,9 @@ const GROUP_EMISSIVE: Record<string, string> = {
   sdk: '#443300',
   network: '#001144',
   chain: '#441100',
+  product: '#553300',
+  cluster: '#664422',
+  agent: '#113322',
 };
 
 const getNodeColor = (g: string) => GROUP_COLORS[g] || '#00f0ff';
@@ -535,66 +542,199 @@ function ConstellationLines({
 }
 
 // ---------------------------------------------------------------------------
-// Scene camera controller with fly-to
+// Star cluster — many small bodies (factory catalog / templates)
 // ---------------------------------------------------------------------------
-function CameraController({
-  flyTarget,
-  onFlyComplete,
+function StarCluster({
+  node,
+  onClick,
 }: {
-  flyTarget: THREE.Vector3 | null;
-  onFlyComplete: () => void;
+  node: EcoNode;
+  onClick: (n: EcoNode) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null!);
+  const count = Math.min(Math.max(Number(node.metrics?.count) || 12, 8), 48);
+  const clusterColor = getNodeColor('cluster');
+  const base = useMemo(
+    () => new THREE.Vector3(node.position.x, node.position.y, node.position.z),
+    [node.position.x, node.position.y, node.position.z],
+  );
+
+  const stars = useMemo(() => {
+    const out: { offset: THREE.Vector3; size: number; phase: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      const u = (i + 0.5) / count;
+      const phi = Math.acos(1 - 2 * u);
+      const theta = i * GOLDEN_ANGLE_LOCAL;
+      const r = 0.35 + (i % 5) * 0.08;
+      out.push({
+        offset: new THREE.Vector3(
+          r * Math.sin(phi) * Math.cos(theta),
+          r * Math.sin(phi) * Math.sin(theta) * 0.6,
+          r * Math.cos(phi),
+        ),
+        size: 0.04 + (i % 3) * 0.015,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+    return out;
+  }, [count]);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    groupRef.current.position.copy(base);
+    const t = clock.getElapsedTime();
+    groupRef.current.children.forEach((child, i) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const s = stars[i];
+      if (!s) return;
+      const tw = 1 + Math.sin(t * 2 + s.phase) * 0.15;
+      child.position.copy(s.offset).multiplyScalar(tw);
+    });
+  });
+
+  return (
+    <group ref={groupRef} position={[base.x, base.y, base.z]}>
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(node);
+        }}
+      >
+        <sphereGeometry args={[0.55, 24, 24]} />
+        <meshBasicMaterial
+          color={clusterColor}
+          transparent
+          opacity={0.12}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      {stars.map((s, i) => (
+        <mesh
+          key={i}
+          position={s.offset}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick(node);
+          }}
+        >
+          <sphereGeometry args={[s.size, 8, 8]} />
+          <meshStandardMaterial
+            color={clusterColor}
+            emissive={clusterColor}
+            emissiveIntensity={1.2}
+            roughness={0.35}
+            metalness={0.1}
+          />
+        </mesh>
+      ))}
+      <Html distanceFactor={14} position={[0, 0.9, 0]} center>
+        <div
+          className="text-[9px] font-mono px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap"
+          style={{
+            color: clusterColor,
+            background: 'rgba(0,0,0,0.55)',
+            border: `1px solid ${clusterColor}44`,
+          }}
+        >
+          {node.label}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+const GOLDEN_ANGLE_LOCAL = 2.399963229728653282;
+
+function focusDistanceForNode(nodeId: string, group: string): number {
+  if (nodeId === 'hub') return 14;
+  if (group === 'cluster') return 7;
+  if (group === 'core') return 10;
+  if (group === 'contract') return 8;
+  return 6.5;
+}
+
+// ---------------------------------------------------------------------------
+// Camera — fly to selection and keep OrbitControls target locked
+// ---------------------------------------------------------------------------
+function CameraRig({
+  focusNodeId,
+  nodePositions,
+  nodeGroups,
+}: {
+  focusNodeId: string | null;
+  nodePositions: Map<string, THREE.Vector3>;
+  nodeGroups: Map<string, string>;
 }) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
-  const animRef = useRef({ active: false, start: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), lookFrom: new THREE.Vector3(), lookTo: new THREE.Vector3() });
+  const controls = useThree((s) => s.controls as OrbitControlsImpl | null);
+  const animRef = useRef({
+    active: false,
+    start: 0,
+    from: new THREE.Vector3(),
+    to: new THREE.Vector3(),
+    lookFrom: new THREE.Vector3(),
+    lookTo: new THREE.Vector3(),
+  });
+  const lastFocusId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!flyTarget) return;
+    if (!focusNodeId) {
+      lastFocusId.current = null;
+      return;
+    }
+    const target = nodePositions.get(focusNodeId);
+    if (!target || lastFocusId.current === focusNodeId) return;
+    lastFocusId.current = focusNodeId;
 
-    const from = camera.position.clone();
+    const group = nodeGroups.get(focusNodeId) ?? 'core';
+    const dist = focusDistanceForNode(focusNodeId, group);
+    const dir = camera.position.clone().sub(target);
+    if (dir.lengthSq() < 0.01) {
+      dir.set(0.35, 0.22, 1).normalize();
+    } else {
+      dir.normalize();
+    }
+    const to = target.clone().add(dir.multiplyScalar(dist));
     const lookFrom = new THREE.Vector3();
-    camera.getWorldDirection(lookFrom).normalize().multiplyScalar(10).add(from);
-
-    // Fly to a position offset from the target
-    const offset = new THREE.Vector3(
-      (Math.random() - 0.5) * 4,
-      2 + Math.random() * 3,
-      3 + Math.random() * 4,
-    );
-    const to = flyTarget.clone().add(offset);
-    const lookTo = flyTarget.clone();
+    camera.getWorldDirection(lookFrom).normalize().multiplyScalar(10).add(camera.position);
 
     animRef.current = {
       active: true,
       start: performance.now(),
-      from,
+      from: camera.position.clone(),
       to,
       lookFrom,
-      lookTo,
+      lookTo: target.clone(),
     };
-  }, [flyTarget, camera]);
+  }, [focusNodeId, camera, nodePositions, nodeGroups]);
 
   useFrame(() => {
     const anim = animRef.current;
-    if (!anim.active) return;
-
-    const elapsed = (performance.now() - anim.start) / 1000;
-    const duration = 1.5;
-    const t = Math.min(elapsed / duration, 1.0);
-    // Ease in-out
-    const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-
-    camera.position.lerpVectors(anim.from, anim.to, e);
-    camera.lookAt(
-      anim.lookFrom.x + (anim.lookTo.x - anim.lookFrom.x) * e,
-      anim.lookFrom.y + (anim.lookTo.y - anim.lookFrom.y) * e,
-      anim.lookFrom.z + (anim.lookTo.z - anim.lookFrom.z) * e,
-    );
-
-    if (t >= 1) {
-      anim.active = false;
-      onFlyComplete();
+    if (anim.active) {
+      const elapsed = (performance.now() - anim.start) / 1000;
+      const duration = 1.4;
+      const t = Math.min(elapsed / duration, 1);
+      const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      camera.position.lerpVectors(anim.from, anim.to, e);
+      const lookX = anim.lookFrom.x + (anim.lookTo.x - anim.lookFrom.x) * e;
+      const lookY = anim.lookFrom.y + (anim.lookTo.y - anim.lookFrom.y) * e;
+      const lookZ = anim.lookFrom.z + (anim.lookTo.z - anim.lookFrom.z) * e;
+      camera.lookAt(lookX, lookY, lookZ);
+      if (controls) {
+        controls.target.set(lookX, lookY, lookZ);
+      }
+      if (t >= 1) {
+        anim.active = false;
+      }
+      return;
     }
+
+    if (!focusNodeId || !controls) return;
+    const target = nodePositions.get(focusNodeId);
+    if (!target) return;
+    controls.target.lerp(target, 0.14);
+    controls.update();
   });
 
   return null;
@@ -608,15 +748,17 @@ function SceneContent({
   onNodeClick,
   themeColor,
   pulseIntensity,
-  flyToNodeId,
-  onFlyComplete,
+  focusNodeId,
+  fundingEvents,
+  scenario,
 }: {
   state: EcosystemState | null;
   onNodeClick: (n: EcoNode) => void;
   themeColor: string;
   pulseIntensity: number;
-  flyToNodeId: string | null;
-  onFlyComplete: () => void;
+  focusNodeId: string | null;
+  fundingEvents?: Array<{ id: string; amount: number; token: string; source: string; ts: string }> | null;
+  scenario?: { phase: string; phase_progress: number; phase_color: string; tick_count: number; funding_total: number; hub_count: number; buyer_rounds: number } | null;
 }) {
   const nodePositions = useMemo(() => {
     const map = new Map<string, THREE.Vector3>();
@@ -628,10 +770,15 @@ function SceneContent({
     return map;
   }, [state]);
 
-  const flyTarget = useMemo(() => {
-    if (!flyToNodeId) return null;
-    return nodePositions.get(flyToNodeId) ?? null;
-  }, [flyToNodeId, nodePositions]);
+  const nodeGroups = useMemo(() => {
+    const map = new Map<string, string>();
+    if (state) {
+      for (const node of state.nodes) {
+        map.set(node.id, node.group);
+      }
+    }
+    return map;
+  }, [state]);
 
   const activeLinks = state?.links ?? [];
   const hubPos = new THREE.Vector3(0, 0, 0);
@@ -659,7 +806,11 @@ function SceneContent({
 
   return (
     <>
-      <CameraController flyTarget={flyTarget} onFlyComplete={onFlyComplete} />
+      <CameraRig
+        focusNodeId={focusNodeId}
+        nodePositions={nodePositions}
+        nodeGroups={nodeGroups}
+      />
 
       {/* Lighting */}
       <ambientLight intensity={0.15} />
@@ -703,16 +854,36 @@ function SceneContent({
         />
       ))}
 
-      {/* Ecosystem nodes */}
-      {state?.nodes.map((node) => (
-        <EcoNodeMesh
-          key={node.id}
-          node={node}
-          onClick={onNodeClick}
-          themeColor={themeColor}
-          pulseIntensity={pulseIntensity}
+      {/* External funding stream */}
+      <FundingStream
+        hubPosition={hubPos}
+        active={(fundingEvents?.length ?? 0) > 0}
+        intensity={pulseIntensity}
+      />
+
+      {/* Phase ring around hub */}
+      {scenario && (
+        <PhaseRing
+          phaseColor={scenario.phase_color}
+          progress={scenario.phase_progress}
+          active={true}
         />
-      ))}
+      )}
+
+      {/* Ecosystem nodes */}
+      {state?.nodes.map((node) =>
+        node.group === 'cluster' ? (
+          <StarCluster key={node.id} node={node} onClick={onNodeClick} />
+        ) : (
+          <EcoNodeMesh
+            key={node.id}
+            node={node}
+            onClick={onNodeClick}
+            themeColor={themeColor}
+            pulseIntensity={pulseIntensity}
+          />
+        ),
+      )}
 
       {/* Outer orbital ring */}
       <mesh rotation={[Math.PI / 2.2, 0.2, 0]}>
@@ -725,15 +896,140 @@ function SceneContent({
       </mesh>
 
       <OrbitControls
+        makeDefault
         enableDamping
+        enablePan
         dampingFactor={0.06}
         minDistance={3}
         maxDistance={35}
         maxPolarAngle={Math.PI * 0.78}
-        enablePan
         touches={{ ONE: 2, TWO: 2 }}
       />
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Funding Stream — cosmic particles flowing from outside toward hub
+// ---------------------------------------------------------------------------
+function FundingStream({
+  hubPosition,
+  active,
+  intensity,
+}: {
+  hubPosition: THREE.Vector3;
+  active: boolean;
+  intensity: number;
+}) {
+  const pointsRef = useRef<THREE.Points>(null!);
+  const particleCount = 80;
+
+  const { positions, origins } = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    const org = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      // Particles originate from outside the scene
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI * 0.6 + 0.2;
+      const dist = 15 + Math.random() * 10;
+      org[i * 3] = Math.cos(theta) * Math.cos(phi) * dist;
+      org[i * 3 + 1] = Math.sin(phi) * dist * 0.7;
+      org[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * dist;
+      pos[i * 3] = org[i * 3];
+      pos[i * 3 + 1] = org[i * 3 + 1];
+      pos[i * 3 + 2] = org[i * 3 + 2];
+    }
+    return { positions: pos, origins: org };
+  }, [particleCount]);
+
+  useFrame(({ clock }) => {
+    if (!pointsRef.current || !active) return;
+    const t = clock.getElapsedTime();
+    const posArr = pointsRef.current.geometry.attributes.position.array as Float32Array;
+
+    for (let i = 0; i < particleCount; i++) {
+      const progress = ((t * 0.15 + i * 0.012) % 1);
+      const ease = progress < 0.5
+        ? 2 * progress * progress
+        : -1 + (4 - 2 * progress) * progress;
+
+      posArr[i * 3] = origins[i * 3] + (hubPosition.x - origins[i * 3]) * ease;
+      posArr[i * 3 + 1] = origins[i * 3 + 1] + (hubPosition.y - origins[i * 3 + 1]) * ease;
+      posArr[i * 3 + 2] = origins[i * 3 + 2] + (hubPosition.z - origins[i * 3 + 2]) * ease;
+    }
+    pointsRef.current.geometry.attributes.position.needsUpdate = true;
+
+    const mat = pointsRef.current.material as THREE.PointsMaterial;
+    mat.opacity = active ? 0.25 * intensity : 0;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" array={positions} count={particleCount} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.08}
+        color="#ffdd00"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase Ring — rotating ring showing evolution phase progress
+// ---------------------------------------------------------------------------
+function PhaseRing({
+  phaseColor,
+  progress,
+  active,
+}: {
+  phaseColor: string;
+  progress: number;
+  active: boolean;
+}) {
+  const ringRef = useRef<THREE.Mesh>(null!);
+
+  useFrame((_, delta) => {
+    if (ringRef.current) {
+      ringRef.current.rotation.z += delta * (0.3 + progress * 0.6);
+      ringRef.current.rotation.x += delta * 0.1;
+    }
+  });
+
+  if (!active) return null;
+
+  const ringRadius = 1.5 + progress * 0.5;
+
+  return (
+    <group>
+      {/* Phase progress ring */}
+      <mesh ref={ringRef} rotation={[Math.PI / 2.5, 0, 0]}>
+        <torusGeometry args={[ringRadius, 0.03, 16, 100, progress * Math.PI * 2]} />
+        <meshBasicMaterial
+          color={phaseColor}
+          transparent
+          opacity={0.6}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      {/* Full ring ghost */}
+      <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+        <torusGeometry args={[ringRadius, 0.015, 8, 100]} />
+        <meshBasicMaterial
+          color={phaseColor}
+          transparent
+          opacity={0.1}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -743,22 +1039,37 @@ function SceneContent({
 interface Props {
   state: EcosystemState | null;
   onNodeClick: (node: EcoNode) => void;
+  focusNodeId?: string | null;
   themeColor: string;
   pulseIntensity: number;
+  fundingEvents?: Array<{
+    id: string;
+    amount: number;
+    token: string;
+    source: string;
+    ts: string;
+  }> | null;
+  scenario?: {
+    phase: string;
+    phase_progress: number;
+    phase_color: string;
+    tick_count: number;
+    funding_total: number;
+    hub_count: number;
+    buyer_rounds: number;
+  } | null;
 }
 
-export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIntensity }: Props) {
+export default function EcosystemGraph({
+  state,
+  onNodeClick,
+  focusNodeId = null,
+  themeColor,
+  pulseIntensity,
+  fundingEvents,
+  scenario,
+}: Props) {
   const isMobile = useIsMobile();
-  const [flyToNodeId, setFlyToNodeId] = useState<string | null>(null);
-
-  const handleNodeClick = useCallback((node: EcoNode) => {
-    setFlyToNodeId(node.id);
-    onNodeClick(node);
-  }, [onNodeClick]);
-
-  const handleFlyComplete = useCallback(() => {
-    setFlyToNodeId(null);
-  }, []);
 
   return (
     <div className="absolute inset-0 touch-none">
@@ -775,11 +1086,12 @@ export default function EcosystemGraph({ state, onNodeClick, themeColor, pulseIn
       >
         <SceneContent
           state={state}
-          onNodeClick={handleNodeClick}
+          onNodeClick={onNodeClick}
           themeColor={themeColor}
           pulseIntensity={pulseIntensity}
-          flyToNodeId={flyToNodeId}
-          onFlyComplete={handleFlyComplete}
+          focusNodeId={focusNodeId}
+          fundingEvents={fundingEvents}
+          scenario={scenario}
         />
 
         {/* Post processing — makes everything GLOW */}

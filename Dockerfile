@@ -5,7 +5,9 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install --silent
 COPY frontend/ ./
 ARG VITE_BASE_PATH=/monitor/
+ARG VITE_ALIEN_API_TOKEN=
 ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+ENV VITE_ALIEN_API_TOKEN=${VITE_ALIEN_API_TOKEN}
 RUN npm run build
 
 FROM python:3.12-slim AS runtime
@@ -19,6 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt
 COPY backend/ ./backend/
+COPY config/ ./config/
 COPY --from=frontend /build/frontend/dist ./frontend/dist
 
 WORKDIR /app/backend

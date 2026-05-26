@@ -12,10 +12,13 @@ Tests cover:
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
 import pytest
+
+os.environ.setdefault("ALIEN_API_TOKEN", "test-monitor-token")
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
@@ -30,6 +33,7 @@ from main import (
 from fastapi.testclient import TestClient
 
 client = TestClient(app)
+_AUTH = {"Authorization": "Bearer test-monitor-token"}
 
 
 # ===========================================================================
@@ -256,14 +260,19 @@ class TestAPI:
         assert len(data["nodes"]) == 17
 
     def test_ai_ask_empty_question(self):
-        resp = client.post("/api/ai/ask", json={"question": ""})
+        resp = client.post("/api/ai/ask", json={"question": ""}, headers=_AUTH)
         assert resp.status_code == 200
         data = resp.json()
         assert "answer" in data
         assert "Please ask" in data["answer"]
 
+    def test_ai_ask_empty_question_ru(self):
+        resp = client.post("/api/ai/ask", json={"question": "", "locale": "ru"}, headers=_AUTH)
+        assert resp.status_code == 200
+        assert "Задайте вопрос" in resp.json()["answer"]
+
     def test_ai_ask_no_question_field(self):
-        resp = client.post("/api/ai/ask", json={})
+        resp = client.post("/api/ai/ask", json={}, headers=_AUTH)
         assert resp.status_code == 200
         data = resp.json()
         assert "answer" in data
@@ -360,7 +369,7 @@ class TestEdgeCases:
                     assert val >= 0, f"Negative {key}: {val}"
 
     def test_ai_endpoint_survives_large_input(self):
-        resp = client.post("/api/ai/ask", json={"question": "x" * 10000})
+        resp = client.post("/api/ai/ask", json={"question": "x" * 10000}, headers=_AUTH)
         assert resp.status_code == 200
 
     def test_topology_idempotent(self):

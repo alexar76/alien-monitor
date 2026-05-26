@@ -10,9 +10,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
-      proxy: {
-        '/api': 'http://localhost:9100',
-        '/ws': { target: 'ws://localhost:9100', ws: true },
+    proxy: {
+        '/api': `http://localhost:${env.VITE_DEV_PROXY_PORT || '9100'}`,
+        '/ws': { target: `ws://localhost:${env.VITE_DEV_PROXY_PORT || '9100'}`, ws: true },
       },
     },
     build: {
