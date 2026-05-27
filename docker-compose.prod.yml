@@ -22,7 +22,7 @@ services:
       - path: ../.env
         required: false
     environment:
-      ALIEN_MODE: ${ALIEN_MODE:-real}
+      ALIEN_MODE: ${ALIEN_MODE:-universe}
       ALIEN_PORT: ${ALIEN_PORT:-9100}
       ALIEN_HOST: ${ALIEN_HOST:-127.0.0.1}
       HUB_URL: ${HUB_URL:-http://127.0.0.1:9083}
@@ -41,6 +41,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_BASE_PATH: ${PULSE_TERMINAL_BASE_PATH:-/pulse/}
+        VITE_PULSE_DEFAULT_CONTOUR: ${PULSE_DEFAULT_CONTOUR:-uni}
+        VITE_PULSE_MONITOR_API: ${PULSE_MONITOR_API:-api/monitor}
     container_name: pulse-terminal
     network_mode: host
     restart: unless-stopped

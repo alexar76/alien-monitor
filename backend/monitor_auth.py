@@ -1,17 +1,47 @@
-"""Optional Bearer token for sensitive Alien Monitor API routes."""
+"""Bearer-token guard for sensitive Alien Monitor API routes.
+
+Behaviour:
+- Configured token (``ALIEN_API_TOKEN`` / ``ALIEN_MONITOR_API_TOKEN``): always required.
+- No token AND not production: allowed (local dev / smoke tests).
+- No token AND production: **refused** with 503 — refuse to fail open in prod.
+
+Production is detected via ``ALIEN_ENV`` / ``AIFACTORY_ENV`` ∈ {production|prod|live}
+or any of ``AIFACTORY_PROD=1`` / ``AIFACTORY_PRODUCTION=1``. This mirrors the same
+production-mode detection used by ``services/ai_market_protocol/config.py`` and
+``security/prod_startup_guard.py`` — keeping a single source of truth prevents the
+classic "looks safe in staging, wide-open in prod" failure mode.
+"""
 
 from __future__ import annotations
 
+import logging
 import os
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+logger = logging.getLogger(__name__)
+
 _bearer = HTTPBearer(auto_error=False)
+
+_PRODUCTION_ENV_TAGS = frozenset({"production", "prod", "live"})
 
 
 def monitor_api_token() -> str:
     return (os.environ.get("ALIEN_API_TOKEN") or os.environ.get("ALIEN_MONITOR_API_TOKEN") or "").strip()
+
+
+def _is_production_env() -> bool:
+    for key in ("ALIEN_ENV", "AIFACTORY_ENV"):
+        if os.environ.get(key, "").strip().lower() in _PRODUCTION_ENV_TAGS:
+            return True
+    for key in ("AIFACTORY_PROD", "AIFACTORY_PRODUCTION"):
+        if os.environ.get(key, "").strip().lower() in ("1", "true", "yes", "on"):
+            return True
+    return False
+
+
+_PROD_NO_TOKEN_WARNED = False
 
 
 def require_monitor_auth(
@@ -19,6 +49,19 @@ def require_monitor_auth(
 ) -> None:
     expected = monitor_api_token()
     if not expected:
+        if _is_production_env():
+            global _PROD_NO_TOKEN_WARNED
+            if not _PROD_NO_TOKEN_WARNED:
+                logger.error(
+                    "ALIEN_API_TOKEN is not set in production — refusing all auth-gated requests. "
+                    "Set ALIEN_API_TOKEN (or ALIEN_MONITOR_API_TOKEN) to a unique secret."
+                )
+                _PROD_NO_TOKEN_WARNED = True
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="ALIEN_API_TOKEN not configured; refusing in production",
+            )
+        # Non-production: allow unauthenticated access for local dev convenience.
         return
     token = (credentials.credentials if credentials else "").strip()
     if token != expected:
