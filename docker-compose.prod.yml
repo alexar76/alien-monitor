@@ -1,0 +1,55 @@
+# Production ecosystem demos on the AI-Factory host (nginx → /monitor/ and /pulse/)
+#
+#   docker compose -f alien-monitor/docker-compose.prod.yml up -d --build
+#
+# Requires Hub (:9083), Factory API (:9081), Prometheus (:9090) on the host.
+# Uses host network so 127.0.0.1 targets work:
+#   Alien Monitor API  → 127.0.0.1:9100
+#   Pulse Terminal UI  → 127.0.0.1:5199
+#
+# UNI mode (default): Anvil + FakeUSDT + Escrow + NFT deploy inside the container.
+# State persists under ../data/alien-monitor/universe (Anvil state + universe_config.json).
+
+services:
+  alien-monitor:
+    build:
+      context: ..
+      dockerfile: alien-monitor/Dockerfile
+      args:
+        VITE_BASE_PATH: ${ALIEN_MONITOR_BASE_PATH:-/monitor/}
+        VITE_ALIEN_API_TOKEN: ${ALIEN_API_TOKEN:-}
+    container_name: alien-monitor
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      ALIEN_MODE: ${ALIEN_MODE:-universe}
+      ALIEN_PORT: ${ALIEN_PORT:-9100}
+      ALIEN_HOST: ${ALIEN_HOST:-127.0.0.1}
+      ALIEN_UNIVERSE_AUTO_START: ${ALIEN_UNIVERSE_AUTO_START:-1}
+      # Hub liquidity grants need the same secret as Factory (from ../.env via env_file).
+      # AIFACTORY_UNI_GRANT_SECRET=...
+      HUB_URL: ${HUB_URL:-http://127.0.0.1:9083}
+      MESH_URL: ${MESH_URL:-http://127.0.0.1:8090}
+      AICOM_API_URL: ${AICOM_API_URL:-http://127.0.0.1:9081}
+      ALIEN_FACTORY_API_TIMEOUT: ${ALIEN_FACTORY_API_TIMEOUT:-30}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://127.0.0.1:9090}
+      ALIEN_LLM_CONFIG: ${ALIEN_LLM_CONFIG:-/app/llm/model_providers.yaml}
+      ALIEN_API_TOKEN: ${ALIEN_API_TOKEN:-}
+    volumes:
+      - ../data/config/model_providers.yaml:/app/llm/model_providers.yaml:ro
+      - ../data/alien-monitor/universe:/app/data/universe
+
+  pulse-terminal:
+    build:
+      context: ../apps/pulse-terminal
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: ${PULSE_TERMINAL_BASE_PATH:-/pulse/}
+        VITE_PULSE_DEFAULT_CONTOUR: ${PULSE_DEFAULT_CONTOUR:-uni}
+        VITE_PULSE_MONITOR_API: ${PULSE_MONITOR_API:-api/monitor}
+    container_name: pulse-terminal
+    network_mode: host
+    restart: unless-stopped
