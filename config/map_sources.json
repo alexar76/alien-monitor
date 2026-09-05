@@ -1,0 +1,8 @@
+{
+  "_comment": "Where a fresh deployment asks what the ecosystem looks like. The first source that answers wins; the rest are for the day it does not. A seed, never an authority — every URL a source hands back is SSRF-checked and folded through the same identity rules as anything else, so a map source cannot name one of our nodes for us. Override with ALIEN_MAP_SOURCES (comma-separated).",
+  "sources": [
+    "https://modelmarket.dev",
+    "https://hunt.modelmarket.dev",
+    "http://108.165.32.182:9083"
+  ]
+}
