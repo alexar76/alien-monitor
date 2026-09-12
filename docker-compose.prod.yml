@@ -1,0 +1,201 @@
+# Production ecosystem demos on the AI-Factory host.
+# Public LIVE map: https://monitor.modelmarket.dev/     (:9101)
+# Public UNI map:  https://monitor-uni.modelmarket.dev/ (:9100; factory /monitor → redirect)
+# Pulse:           https://magic-ai-factory.com/pulse/
+#
+#   docker compose -f alien-monitor/docker-compose.prod.yml up -d --build
+#
+# Requires Hub (:9083), Factory API (:9081), Prometheus (:9090) on the host.
+# Uses host network so 127.0.0.1 targets work:
+#   Alien Monitor API  → 127.0.0.1:9100
+#   Pulse Terminal UI  → 127.0.0.1:5199
+#
+# UNI mode (default): Anvil + FakeUSDT + Escrow + NFT deploy inside the container.
+# State persists under ../data/alien-monitor/universe (Anvil state + universe_config.json).
+# Foundry also writes dump trees under ~/.foundry/anvil/tmp — the universe tick
+# reaps those (ALIEN_FOUNDRY_ANVIL_TMP_KEEP_DIRS / _KEEP_FILES / _MAX_MB).
+
+services:
+  alien-monitor:
+    image: alien-monitor:${AICOM_IMAGE_TAG:-local}
+    build:
+      context: ..
+      dockerfile: alien-monitor/Dockerfile
+      args:
+        # Prod deploy sets ALIEN_MONITOR_BASE_PATH=/ for the subdomain.
+        # Local path demos may still use /monitor/.
+        VITE_BASE_PATH: ${ALIEN_MONITOR_BASE_PATH:-/}
+    container_name: alien-monitor
+    network_mode: host
+    restart: unless-stopped
+    # NO `env_file: ../.env`. That line loaded the ENTIRE monorepo .env into a container
+    # whose read APIs are public. Measured live on 2026-09-11 against the running
+    # `alien-monitor`: 11 secrets the monitor never mentions anywhere in its source —
+    # ATLAS_SIGNING_SEED_B64 (the ATLAS federation identity), ATLAS_OPERATOR_TOKEN,
+    # MESH_ADMIN_TOKEN, MESH_API_TOKEN, AIFACTORY_FIREWALL_RULES_FERNET_KEY,
+    # AIFACTORY_DEV_BOOTSTRAP_PASSWORD, AIFACTORY_SANDBOX_DEMO_PASSWORD,
+    # AIFACTORY_RESELLER_KEYS, GRAFANA_ADMIN_PASSWORD, POSTGRES_PASSWORD, REDIS_PASSWORD.
+    # Same pattern closed in ai-service-mesh the same day, one host over and fatter.
+    #
+    # The variables below are the monitor's declared surface. Entries written `NAME:`
+    # with no value are PASS-THROUGH: compose takes them from the deploy shell (which
+    # `scripts/deploy_alien_monitor.sh` populates with `set -a; source ../.env`) and, when
+    # unset there, leaves them OUT of the container entirely. That is what `${NAME:-}`
+    # could not do — an empty compose default is a SET-but-empty variable, which is how
+    # the ALIEN_AI_PROVIDER pin silently disappeared and why the comments below used to
+    # say "declare this in ../.env only".
+    environment:
+      ALIEN_MODE: ${ALIEN_MODE:-universe}
+      ALIEN_PORT: ${ALIEN_PORT:-9100}
+      # 0.0.0.0 so co-located containers (ARGUS) can POST /api/argus/run via host.docker.internal.
+      # Public access stays nginx-only (monitor.modelmarket.dev); firewall :9100 on the host if exposed.
+      ALIEN_HOST: ${ALIEN_HOST:-127.0.0.1}
+      ALIEN_UNIVERSE_AUTO_START: ${ALIEN_UNIVERSE_AUTO_START:-1}
+      # Embedded solana-test-validator (~1.5GB RAM). Off by default on 8GB hosts.
+      # Set ALIEN_UNIVERSE_ENABLE_SOLANA=1 for UNI Solana lottery program deploy.
+      ALIEN_UNIVERSE_ENABLE_SOLANA: ${ALIEN_UNIVERSE_ENABLE_SOLANA:-0}
+      # Hub liquidity grants need the same secret as Factory. Pass-through, not a default:
+      # an empty value here would make universe_funding.py report "skipped (no secret)".
+      AIFACTORY_UNI_GRANT_SECRET:
+      # Which LLM answers in the AI panel, and the token that gates /api/argus/run and the
+      # admin routes. Pass-through for the reason in the block comment above: these two are
+      # exactly the pins that an empty compose default silently erased.
+      ALIEN_AI_PROVIDER:
+      ALIEN_API_TOKEN:
+      ALIEN_MONITOR_API_TOKEN:
+      HUB_URL: ${HUB_URL:-http://127.0.0.1:9083}
+      # Operator-facing Hub link on node cards (not the Docker API target above).
+      ALIEN_PUBLIC_HUB_URL: ${ALIEN_PUBLIC_HUB_URL:-https://modelmarket.dev}
+      # Universe map card + UNI layer polls. Empty on the LIVE process on purpose.
+      ALIEN_UNI_HUB_URL: ${ALIEN_UNI_HUB_URL:-}
+      MESH_URL: ${MESH_URL:-http://127.0.0.1:8090}
+      AICOM_API_URL: ${AICOM_API_URL:-http://127.0.0.1:9081}
+      # Which mesh, factory and Prometheus the UNI realm reads. Pass-through, again
+      # because an empty value is not the same as an absent one here.
+      #
+      # Unset, the UNI realm inherits MESH_URL / AICOM_API_URL / PROMETHEUS_URL above — on
+      # a host that runs both realms those are the LIVE stack, and the bubble was drawing
+      # the live mesh's agents as its own (both maps read AGENTS 3, the same three agents).
+      # It still inherits them, because on a one-host demo that IS what the realm has to
+      # look at — but every node built from an inherited layer now carries the address it
+      # was polled from plus a "shared with the host" marker onto its card. Declare them in
+      # ../.env to make the choice explicit and drop the marker.
+      ALIEN_UNIVERSE_MESH_URL:
+      ALIEN_UNIVERSE_APP_URL:
+      ALIEN_UNIVERSE_PROM_URL:
+      ALIEN_UNIVERSE_HUB_URL:
+      ALIEN_PUBLIC_FACTORY_URL: ${ALIEN_PUBLIC_FACTORY_URL:-${AIFACTORY_PUBLIC_URL:-https://magic-ai-factory.com}}
+      AIFACTORY_PUBLIC_URL:
+      NEXT_PUBLIC_SITE_URL:
+      ALIEN_FACTORY_API_TIMEOUT: ${ALIEN_FACTORY_API_TIMEOUT:-25}
+      ALIEN_FACTORY_MONITOR_CATALOG_TIMEOUT: ${ALIEN_FACTORY_MONITOR_CATALOG_TIMEOUT:-10}
+      ALIEN_FACTORY_TICK_TIMEOUT: ${ALIEN_FACTORY_TICK_TIMEOUT:-12}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://127.0.0.1:9090/prometheus}
+      ALIEN_LLM_CONFIG: ${ALIEN_LLM_CONFIG:-/app/llm/model_providers.yaml}
+      # The AI panel's own LLM spend. ai_assistant._resolve_api_key reads whatever name the
+      # provider entry's `api_key_env` gives, so the key vars the shipped config can name
+      # are passed through — and nothing else. NOTE for ops: data/config/model_providers.yaml
+      # currently carries the OpenRouter key INLINE, and that file is mounted read-only
+      # below, so narrowing the env does not narrow that. Give the public panel its own
+      # budget-capped key rather than the factory's.
+      OPENROUTER_API_KEY:
+      DEEPSEEK_API_KEY:
+      ANTHROPIC_API_KEY:
+      GROQ_API_KEY:
+      TOGETHER_API_KEY:
+      ALIEN_PUBLIC_READ: ${ALIEN_PUBLIC_READ:-1}
+      ALIEN_ENV: ${ALIEN_ENV:-production}
+      # Both public rate limits (AI questions, session attempts) key on the caller's
+      # address. This container runs with network_mode: host behind
+      # deploy/nginx/monitor.modelmarket.dev.conf, so the peer is always 127.0.0.1 and
+      # without this the whole internet shared ONE bucket of 20 questions a minute.
+      # monitor_auth.client_address only believes X-Forwarded-For from an address listed
+      # here, and reads the RIGHTMOST hop — nginx APPENDS with $proxy_add_x_forwarded_for,
+      # so the leftmost is whatever the caller made up.
+      ALIEN_TRUSTED_PROXIES: ${ALIEN_TRUSTED_PROXIES:-127.0.0.1,::1}
+      ALIEN_CORS_ORIGINS: ${ALIEN_CORS_ORIGINS:-}
+      # Crypto master switch + the chain the LIVE map reads (see chain_metrics).
+      AIFACTORY_CRYPTO_ENABLED: ${AIFACTORY_CRYPTO_ENABLED:-0}
+      ALIEN_EVM_RPC:
+      ALIEN_EVM_CHAIN:
+      AIMARKET_RPC_BASE:
+      BASE_RPC_URL:
+      AIMARKET_ESCROW_EVM_ADDRESS:
+      AIMARKET_NFT_CHAIN:
+      AIMARKET_NFT_CHAIN_RPC:
+      AIMARKET_NFT_CONTRACT:
+      AIMARKET_PAYMENT_RECIPIENT:
+      # Remote oracle stack — see alien-monitor/backend/oracle_family.py
+      ALIEN_ORACLE_PORTAL: ${ALIEN_ORACLE_PORTAL:-https://oracles.modelmarket.dev}
+      ALIEN_ORACLE_PLATON_URL: ${ALIEN_ORACLE_PLATON_URL:-https://oracles.modelmarket.dev}
+      ALIEN_ORACLE_CHRONOS_URL: ${ALIEN_ORACLE_CHRONOS_URL:-https://oracles.modelmarket.dev/chronos}
+      ALIEN_ORACLE_FAMILY_URL: ${ALIEN_ORACLE_FAMILY_URL:-https://oracles.modelmarket.dev/family}
+      ALIEN_CAVE_PLATON_URL: ${ALIEN_CAVE_PLATON_URL:-https://oracles.modelmarket.dev/platon}
+      # Remote DIOSCURI twins (same host as oracles) — NOT deployed here; poll only.
+      # Override ALIEN_DIOSCURI_URL in host .env for the private twin URL.
+      ALIEN_DIOSCURI_URL: ${ALIEN_DIOSCURI_URL:-http://127.0.0.1:8790}
+      ALIEN_PUBLIC_DIOSCURI_URL: ${ALIEN_PUBLIC_DIOSCURI_URL:-https://alexar76.github.io/dioscuri/}
+      ALIEN_PUBLIC_THEOROS_URL: ${ALIEN_PUBLIC_THEOROS_URL:-https://alexar76.github.io/theoros/}
+      ALIEN_DIOSCURI_TELEGRAM_URL: ${ALIEN_DIOSCURI_TELEGRAM_URL:-}
+      ALIEN_DIOSCURI_DISCORD_URL: ${ALIEN_DIOSCURI_DISCORD_URL:-https://discord.gg/aimarket}
+      # Remote HELIOS broadcast — NOT deployed here; poll GET /health.
+      # Override ALIEN_HELIOS_URL in host .env for the private broadcast URL.
+      ALIEN_HELIOS_URL: ${ALIEN_HELIOS_URL:-http://127.0.0.1:8791}
+      ALIEN_PUBLIC_HELIOS_URL: ${ALIEN_PUBLIC_HELIOS_URL:-https://github.com/alexar76/helios}
+      ALIEN_HELIOS_YOUTUBE_URL: ${ALIEN_HELIOS_YOUTUBE_URL:-https://www.youtube.com/@My-AI-Factory}
+      # Remote METIS cognitive layer (family host) — poll only; landing at metis.modelmarket.dev
+      ALIEN_METIS_URL: ${ALIEN_METIS_URL:-https://metis.modelmarket.dev}
+      ALIEN_PUBLIC_METIS_URL: ${ALIEN_PUBLIC_METIS_URL:-https://metis.modelmarket.dev}
+      # Required when Metis runs with METIS_PRODUCTION=1 (chat proxy uses Bearer token)
+      ALIEN_METIS_API_KEY: ${ALIEN_METIS_API_KEY:-}
+      # Remote SKOPOS fleet observability (Metis host) — poll GET /healthz
+      ALIEN_SKOPOS_URL: ${ALIEN_SKOPOS_URL:-https://skopos.modelmarket.dev}
+      ALIEN_PUBLIC_SKOPOS_URL: ${ALIEN_PUBLIC_SKOPOS_URL:-https://skopos.modelmarket.dev}
+      # Remote ATLAS sensor map — poll /health + /api/v1/monitor
+      ALIEN_ATLAS_URL: ${ALIEN_ATLAS_URL:-https://atlas.modelmarket.dev}
+      ALIEN_PUBLIC_ATLAS_URL: ${ALIEN_PUBLIC_ATLAS_URL:-https://atlas.modelmarket.dev}
+      # Remote MOMUS red team + separate Treasury payer
+      ALIEN_MOMUS_URL: ${ALIEN_MOMUS_URL:-https://momus.modelmarket.dev}
+      # LOGOS runs on the oracle host, not here — without this the poll goes to the
+      # in-compose default (http://logos:5199), never answers, and the node sits at
+      # "unknown" while the service is up and public.
+      ALIEN_LOGOS_URL: ${ALIEN_LOGOS_URL:-https://logos.modelmarket.dev}
+      # Competing lab galaxy (second Hub VPS) — far-offset nodes in ecosystem_layout
+      ALIEN_COMPETING_HUB_PUBLIC_URL: ${ALIEN_COMPETING_HUB_PUBLIC_URL:-http://hunt.modelmarket.dev:9083}
+      ALIEN_COMPETING_HUB_API_URL: ${ALIEN_COMPETING_HUB_API_URL:-http://hunt.modelmarket.dev:9083}
+      ALIEN_SIGNAL_HUNT_URL: ${ALIEN_SIGNAL_HUNT_URL:-https://hunt.modelmarket.dev}
+      ALIEN_USE_CASES_URL: ${ALIEN_USE_CASES_URL:-https://use.modelmarket.dev}
+      ALIEN_PUBLIC_LOGOS_URL: ${ALIEN_PUBLIC_LOGOS_URL:-https://logos.modelmarket.dev}
+      ALIEN_PUBLIC_MOMUS_URL: ${ALIEN_PUBLIC_MOMUS_URL:-https://momus.modelmarket.dev}
+      ALIEN_TREASURY_URL: ${ALIEN_TREASURY_URL:-https://momus.modelmarket.dev/treasury}
+      ALIEN_PUBLIC_TREASURY_URL: ${ALIEN_PUBLIC_TREASURY_URL:-https://momus.modelmarket.dev/#treasury}
+      # Cross-realm LIVE↔UNI toggle. Empty → relative /monitor/ and /monitor-live/
+      # (fine for local path demos). Production sets absolute URLs in host .env:
+      #   ALIEN_UNIVERSE_MAP_URL=https://monitor-uni.example/
+      #   ALIEN_LIVE_MAP_URL=https://monitor.example/
+      ALIEN_UNIVERSE_MAP_URL: ${ALIEN_UNIVERSE_MAP_URL:-}
+      ALIEN_LIVE_MAP_URL: ${ALIEN_LIVE_MAP_URL:-}
+    volumes:
+      - ../data/config/model_providers.yaml:/app/llm/model_providers.yaml:ro
+      - ../data/alien-monitor/universe:/app/data/universe
+      # Preferred over the baked-in copy: adding a satellite then needs a restart, not a
+      # rebuild. Read-only — the container has no business editing the catalog.
+      - ../scripts/satellite-map.yaml:/app/scripts/satellite-map.yaml:ro
+      # Same reasoning for the written source of truth: the assistant reads
+      # docs/ecosystem/knowledge-base.md, and mounting the central file means a
+      # documented component is known after a restart — no rebuild, and no
+      # second copy to drift.
+      - ../docs/ecosystem/knowledge-base.md:/app/docs/ecosystem/knowledge-base.md:ro
+
+  pulse-terminal:
+    image: pulse-terminal:${AICOM_IMAGE_TAG:-local}
+    build:
+      context: ../apps/pulse-terminal
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: ${PULSE_TERMINAL_BASE_PATH:-/pulse/}
+        VITE_PULSE_DEFAULT_CONTOUR: ${PULSE_DEFAULT_CONTOUR:-live}
+        VITE_PULSE_MONITOR_API: ${PULSE_MONITOR_API:-api/monitor}
+    container_name: pulse-terminal
+    network_mode: host
+    restart: unless-stopped
