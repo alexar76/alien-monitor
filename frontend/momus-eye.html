@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MOMUS eye</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #04030f;
+        overflow: hidden;
+      }
+      #root {
+        position: absolute;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Isolated WebGL document: the monitor page already runs a full-viewport R3F
+         canvas; a second context in the same document starves (≈0.1% lit pixels).
+         This page owns its own context and is embedded from MomusEye. -->
+    <div id="root"></div>
+    <script type="module" src="/src/momusEyeEmbed.tsx"></script>
+  </body>
+</html>
