@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>scene probe</title>
+    <style>
+      html, body { margin: 0; background: #03040a; }
+      #box { position: relative; width: 420px; height: 190px; margin: 24px; }
+    </style>
+  </head>
+  <body>
+    <!-- Dev-only harness: mounts ONE oracle preview in the same wrapper the node card uses,
+         with no monitor app, no API and no auth around it. `?slug=chronos` selects the scene. -->
+    <div id="box"></div>
+    <script type="module" src="/src/sceneProbe.tsx"></script>
+  </body>
+</html>
