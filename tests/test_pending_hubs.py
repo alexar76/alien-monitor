@@ -149,9 +149,10 @@ def test_uni_drops_pending_nodes_from_the_simulation():
     arrived in the simulation styled as a trusted oracle peer (any unmatched node is given
     group="oracle"). The test now reads the code that actually runs.
     """
-    universe_src = (Path(__file__).resolve().parent.parent / "backend" / "universe.py").read_text(
-        encoding="utf-8"
-    )
+    backend = Path(__file__).resolve().parent.parent / "backend"
+    # VirtualUniverse's discovery methods live in universe_discovery.py (DiscoveryMixin).
+    universe_src = (backend / "universe.py").read_text(encoding="utf-8") + (
+        backend / "universe_discovery.py").read_text(encoding="utf-8")
     assert "discover_cached_sync" in universe_src, (
         "UNI's discovery call moved — re-derive what this test guards before editing it"
     )

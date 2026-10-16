@@ -225,7 +225,10 @@ class TestLogosNodeIsOnTheMap:
     def test_the_node_is_actually_wired_into_the_graph(self):
         """logos_layers.py existed for a while and nothing imported it — the node
         was defined and unreachable, which is why the map never showed it."""
-        main_src = (MONITOR / "backend" / "main.py").read_text(encoding="utf-8")
+        backend = MONITOR / "backend"
+        # The graph is built in ecosystem_topology.py; main.py applies the live status.
+        main_src = (backend / "main.py").read_text(encoding="utf-8") + (
+            backend / "ecosystem_topology.py").read_text(encoding="utf-8")
         assert "logos_node_spec()" in main_src, "logos node never added to the graph"
         assert "logos_topology_links()" in main_src, "logos links never added"
         assert "apply_logos_to_nodes" in main_src, "logos live status never applied"

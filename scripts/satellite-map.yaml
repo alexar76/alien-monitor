@@ -4,13 +4,15 @@
 # Org defaults to alexar76; override with SATELLITE_GITHUB_ORG env.
 #
 # Per-satellite `history:` controls how mirror_satellites.sh publishes:
-#   mirror (default, may be omitted) — read-only: squashed orphan commit, force-pushed.
-#                                      PRs are overwritten on the next sync.
-#   live                             — append-only real history: normal commit + push
-#                                      (never --force, never orphan). PRs are accepted;
-#                                      merged PRs must be reverse-imported into the
-#                                      monorepo (scripts/import_satellite_pr.sh) before
-#                                      the next outbound sync, or the sync aborts.
+#   live (default, may be omitted) — append-only real history: normal commit + push
+#                                    (never --force, never orphan). PRs are accepted;
+#                                    merged PRs must be reverse-imported into the
+#                                    monorepo (scripts/import_satellite_pr.sh) before
+#                                    the next outbound sync, or the sync aborts.
+#                                    Every repo publishes this way since 2026-10-15,
+#                                    the same door as metis and the factory repo.
+#   mirror                         — read-only opt-out: squashed orphan commit,
+#                                    force-pushed. PRs are overwritten on the next sync.
 
 org: alexar76
 
