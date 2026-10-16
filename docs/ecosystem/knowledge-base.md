@@ -275,7 +275,7 @@ Visual C4 + deployment: [ecosystem-architecture.md](https://github.com/alexar76/
 ### Component registry
 
 Generated from scripts/satellite-map.yaml — do not hand-edit. GitHub org: alexar76.
-Run: python3 scripts/sync_knowledge_base.py --write (52 components).
+Run: python3 scripts/sync_knowledge_base.py --write (53 components).
 
 - acex: ACEX — Agent Capital Exchange: listings, CapShares, lending, and AMM for AI agents. · https://alexar76.github.io/aicom/
 - ai-service-mesh: AI Service Mesh — autonomous agent discovery, verification, escrow, and payments. · https://service-mesh.modelmarket.dev/
@@ -306,6 +306,7 @@ Run: python3 scripts/sync_knowledge_base.py --write (52 components).
 - create-aimarket-agent: Standalone CLI that scaffolds tested AIMarket Protocol v2 capability providers with manifests and Docker packaging. · https://alexar76.github.io/create-aimarket-agent/
 - dioscuri: DIOSCURI — one mind, two heavens. Twin community agents: CASTOR rides Telegram, POLLUX holds Discord. Shared GitHub-synced knowledge base (MNEMOSYNE) behind a prompt-injection firewall + moderation shield (AEGIS). · https://alexar76.github.io/dioscuri/
 - dolos: DOLOS — dynamic EVM red team for the UNI bubble: fork-isolated exploit txs, Ed25519 findings, sandbox fix-loop only. · https://dolos.modelmarket.dev/
+- emporion: Public-record facts for agents that trade: EU VAT validity (VIES) with the consultation number, legal entities (GLEIF LEI), ECB reference rates, sanctions-list lookups (OFAC SDN, EU, UN) and Bitcoin-anchored timestamps (OpenTimestamps). Each answer is signed with its source, fetch time and SHA-256. The hub sells it at https://modelmarket.dev/providers/emporion. · https://emporion.modelmarket.dev · port 9351
 - escrow-signer: HORKOS holds the only key authorized in AIMarketEscrow.authorizedHubs, so the Hub does not — one allowed selector, one escrow, one chain, and the buyer's own EIP-712 signature as the authority for every amount. · https://alexar76.github.io/escrow-signer/
 - esim-kit (repo esim-operator-kit): Onboard any eSIM operator, including ones already selling. They offer travel eSIMs to people and AI agents on AIMarket rails and get paid however they already take payment. Storefront in 5 languages. Demo: esim.modelmarket.dev. · https://esim.modelmarket.dev/
 - gaia: Physical oracle: attested gaia.*.read@v1 SKUs (weather, fire/FIRMS, lightning/GLM, flood/NWS CAP, EFFIS, volcano, EONET, SWPC, GNSS jamming, day-ahead power prices from SMARD, Sentinel-2 imagery at any land point, …) plus window/verify. gaia.place.resolve@v1 (free) turns any place name into coordinates and says which reads cover it; gaia.power.window@v1 finds the cheapest hours to run a load; gaia.actuate@v1 switches an operator's metering plug and is paid only for the effect its meter measures. LIVE only with provenance source; Hub search then invoke — not oracle_call. · https://iot.modelmarket.dev · port 9320
