@@ -209,6 +209,15 @@ LAST_MONITOR_STATE: dict | None = None
 LAST_MONITOR_STATES: dict[str, dict] = {}
 _state_fetch_lock = asyncio.Lock()
 STATE_TICK_INTERVAL = float(os.getenv("ALIEN_STATE_TICK_SEC", "1.5"))
+# With nobody watching, the ticker still keeps the REST cache warm, just slowly. It used to
+# poll every satellite every 1.5 s around the clock: on the attested host that was two hub
+# documents per tick, ~25% of a core with zero viewers, and on 2026-10-16 much of what
+# /health queued behind while the CPU was crowded (hub.attestedmemory.net down twice).
+STATE_IDLE_TICK_INTERVAL = float(os.getenv("ALIEN_STATE_IDLE_TICK_SEC", "20"))
+# The hub's self-description changes about hourly; asking for it every tick cost the hub a
+# catalogue scan and a full-document signature each time.
+HUB_IDENTITY_TTL = float(os.getenv("ALIEN_HUB_IDENTITY_TTL_SEC", "300"))
+_hub_identity_cache: dict[str, Any] = {"at": 0.0, "doc": None}
 logger = logging.getLogger(__name__)
 _universe_bootstrap: dict | None = None
 
@@ -558,6 +567,25 @@ def _merge_discovered(nodes: list[dict], links: list[dict], disc: dict) -> None:
     _LAST_MERGE["nodes"] = nodes
 
 
+async def _hub_identity(client: httpx.AsyncClient, errors: list[str]) -> dict | None:
+    """The hub's /.well-known document, fetched at most once per HUB_IDENTITY_TTL.
+
+    A failed refresh keeps the last good document (the hub's name does not vanish because
+    one request timed out) and is retried on the next tick.
+    """
+    cache = _hub_identity_cache
+    if cache["doc"] is not None and time.monotonic() - cache["at"] < HUB_IDENTITY_TTL:
+        return cache["doc"]
+    try:
+        r = await client.get(f"{HUB_URL}/.well-known/ai-market.json")
+        doc = r.json() if r.status_code == 200 else None
+        if isinstance(doc, dict):
+            cache["doc"], cache["at"] = doc, time.monotonic()
+    except Exception as e:
+        errors.append(f"hub identity unavailable: {e}")
+    return cache["doc"]
+
+
 async def fetch_real_metrics() -> dict:
     """Gather live metrics from ecosystem HTTP APIs + on-chain RPC."""
     global _real_tick
@@ -587,12 +615,9 @@ async def fetch_real_metrics() -> dict:
         # The centre of a self-hosted Monitor is the hub it is actually pointed at.  Keeping
         # the build-time label "AIMarket Hub" made Independent AI Hub look like a second,
         # unrelated cyan hub beside its own yellow discovery record.
-        try:
-            r = await client.get(f"{HUB_URL}/.well-known/ai-market.json")
-            if r.status_code == 200 and isinstance(r.json(), dict):
-                result["components"]["hub_identity"] = r.json()
-        except Exception as e:
-            result["errors"].append(f"hub identity unavailable: {e}")
+        identity = await _hub_identity(client, result["errors"])
+        if identity is not None:
+            result["components"]["hub_identity"] = identity
 
         # Mesh stats
         try:
@@ -1296,7 +1321,26 @@ async def _monitor_broadcaster() -> None:
                 _ws_client_authed.pop(id(ws), None)
         except Exception:
             pass
-        await asyncio.sleep(STATE_TICK_INTERVAL)
+        await _wait_for_next_tick()
+
+
+# Set when a viewer connects, so an idle ticker wakes for them instead of finishing its
+# long sleep: the first frame comes from the cache, the next one is fresh.
+_viewer_arrived = asyncio.Event()
+
+
+def _tick_interval() -> float:
+    if CONNECTED_CLIENTS:
+        return STATE_TICK_INTERVAL
+    return max(STATE_TICK_INTERVAL, STATE_IDLE_TICK_INTERVAL)
+
+
+async def _wait_for_next_tick() -> None:
+    _viewer_arrived.clear()
+    try:
+        await asyncio.wait_for(_viewer_arrived.wait(), timeout=_tick_interval())
+    except asyncio.TimeoutError:
+        pass
 
 
 def _broadcaster_enabled() -> bool:
@@ -2735,6 +2779,7 @@ async def websocket_endpoint(ws: WebSocket):
         return
     await ws.accept()
     CONNECTED_CLIENTS.add(ws)
+    _viewer_arrived.set()
     _ws_client_modes[id(ws)] = get_server_mode()
     _ws_client_authed[id(ws)] = ws_authed
     initial = _cached_monitor_state()
