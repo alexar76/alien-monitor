@@ -163,6 +163,38 @@ def _sanitize_devices(raw: Any) -> list[dict[str, Any]]:
     return devices
 
 
+#: The device registry (model, site, fields, source, online/fault) changes on a GAIA deploy or
+#: when a device drops, not every tick; /health stays on the 30 s poll. 880 devices are 456 KB
+#: (63 KB gzipped), and refetched every 30 s by each monitor that was ~1.3 GB a day per monitor
+#: for a list that had not changed. ALIEN_GAIA_FLEET_CACHE_TTL overrides; 0 refetches every poll.
+FLEET_CACHE_TTL_S = 300.0
+
+
+@ttl_cached(ttl_s=FLEET_CACHE_TTL_S, env_var="ALIEN_GAIA_FLEET_CACHE_TTL")
+def _fetch_fleet_devices(root: str, timeout: float = 4.0) -> list[dict[str, Any]]:
+    """The sanitised device registry, or [] when GAIA did not answer it (the poll cache then
+    serves the last good list for a while rather than blanking the panel)."""
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            r = client.post(
+                f"{root}/ai-market/v2/invoke",
+                json={
+                    "product_id": "gaia.gateway",
+                    "capability_id": "gaia.fleet.status@v1",
+                    "source_hub": "local",
+                    "input": {},
+                },
+            )
+            if r.status_code == 200:
+                body = r.json()
+                out = body.get("output") if isinstance(body, dict) else None
+                if isinstance(out, dict):
+                    return _sanitize_devices(out.get("devices"))
+    except Exception:
+        pass
+    return []
+
+
 @ttl_cached(env_var="ALIEN_GAIA_CACHE_TTL")
 def fetch_gaia_status_sync(
     *, base_url: str | None = None, timeout: float = 4.0
@@ -177,27 +209,10 @@ def fetch_gaia_status_sync(
             health = h.json()
             if not isinstance(health, dict):
                 return None
-            devices: list[dict[str, Any]] = []
-            try:
-                r = client.post(
-                    f"{root}/ai-market/v2/invoke",
-                    json={
-                        "product_id": "gaia.gateway",
-                        "capability_id": "gaia.fleet.status@v1",
-                        "source_hub": "local",
-                        "input": {},
-                    },
-                )
-                if r.status_code == 200:
-                    body = r.json()
-                    out = body.get("output") if isinstance(body, dict) else None
-                    if isinstance(out, dict):
-                        devices = _sanitize_devices(out.get("devices"))
-            except Exception:
-                devices = []  # health alone still marks the node active
-            return {"health": health, "devices": devices}
     except Exception:
         return None
+    # Health alone still marks the node active; the registry comes from its own, longer cache.
+    return {"health": health, "devices": _fetch_fleet_devices(root, timeout)}
 
 
 def _live_payload(health: dict[str, Any], devices: list[dict[str, Any]]) -> dict[str, Any]:
