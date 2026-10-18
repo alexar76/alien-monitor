@@ -636,6 +636,10 @@ satellites:
       # mirror_satellites.sh copies the live GitHub blob back into the outgoing
       # tree; a sync that deleted it would be rejected or would strip the workflow.
       - .github/workflows/publish-mcp-registry.yml
+      # 2026-10-16 comparison manifest names a private scan host. Keep it in the
+      # monorepo for local scans; do not copy it into the public GitHub mirror.
+      # Judgments and the language pages stay in the mirror.
+      - scripts/scanner-comparison/results/manifest-2026-10-16.json
     registries:
       - npm:@aimarket/warden
       - mcp-registry:io.github.alexar76/warden
