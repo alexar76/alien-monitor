@@ -164,7 +164,7 @@ export default function ControlBar({
           <button
             key={th.id}
             onClick={() => onThemeChange(th.id)}
-            className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold transition-all"
+            className="w-6 h-6 rounded-sm flex items-center justify-center text-[10px] font-bold transition-all"
             style={{
               backgroundColor: theme === th.id ? th.color + '22' : 'transparent',
               color: th.color,
@@ -275,7 +275,7 @@ export default function ControlBar({
       </div>
       {mobileOpen && (
         <div
-          className="md:hidden fixed inset-x-0 z-40 max-h-[min(72vh,560px,calc(100dvh-var(--sheet-bottom)-var(--sheet-top)))] overflow-y-auto rounded-t-2xl glass-panel p-4 pb-3 animate-slide-up bottom-[var(--sheet-bottom)]"
+          className="md:hidden fixed inset-x-0 z-40 max-h-[min(72vh,560px,calc(100dvh-var(--sheet-bottom)-var(--sheet-top)))] overflow-y-auto rounded-t-2xl glass-panel p-4 pb-3 animate-slide-up bottom-(--sheet-bottom)"
           style={{ borderColor: themeColor + '44' }}
         >
           <div className="flex items-center justify-between mb-3">

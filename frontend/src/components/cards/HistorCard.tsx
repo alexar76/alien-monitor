@@ -26,7 +26,7 @@ export default function HistorCard({ node, themeColor, t }: Props) {
     return (
       <div className="mb-4" onClick={(e) => e.stopPropagation()}>
         <div
-          className="px-3 py-2 rounded text-[11px] font-mono leading-relaxed"
+          className="px-3 py-2 rounded-sm text-[11px] font-mono leading-relaxed"
           style={{ background: `${GOLD}12`, border: `1px solid ${GOLD}44`, color: GOLD }}
         >
           {t('histor.unreachable', undefined, 'The log is not answering. Nothing shown here is carried over from an earlier poll.')}
@@ -46,7 +46,7 @@ export default function HistorCard({ node, themeColor, t }: Props) {
   ];
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
-      <div className="mb-3 px-3 py-2 rounded text-[11px] font-mono" style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}>
+      <div className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono" style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}>
         <div className="text-white/70 mb-1">
           {t('histor.role', undefined, 'Transparency log · what MCP servers advertised, and when it changed')}
         </div>
@@ -56,18 +56,18 @@ export default function HistorCard({ node, themeColor, t }: Props) {
       </div>
       <div className="grid grid-cols-2 gap-1.5 mb-3">
         {rows.map(([k, v]) => (
-          <div key={k} className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+          <div key={k} className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
             <div className="text-white/40">{k}</div>
             <div style={{ color: themeColor }}>{v}</div>
           </div>
         ))}
       </div>
-      <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono mb-2">
+      <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono mb-2">
         <span className="text-white/40">{t('histor.sth', undefined, 'Signed tree head')}:</span>{' '}
         <span style={{ color: GOLD }}>{live.root_hash ? `${live.root_hash}…` : '—'}</span>{' '}
         <span className="text-white/40">· {fmt(live.sth_at)} UTC</span>
       </div>
-      <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+      <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
         <span className="text-white/40">{t('histor.crawl', undefined, 'Crawl')}:</span>{' '}
         <span style={{ color: !live.crawl_running && failure ? '#ff9d8f' : themeColor }}>
           {live.crawl_running

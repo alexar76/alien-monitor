@@ -29,7 +29,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                       <button
                         type="button"
                         onClick={() => setExpandedChild(isExpanded ? null : child.id)}
-                        className="w-full px-3 py-1.5 rounded text-xs flex items-center gap-2 transition-colors hover:brightness-110 cursor-pointer text-left"
+                        className="w-full px-3 py-1.5 rounded-sm text-xs flex items-center gap-2 transition-colors hover:brightness-110 cursor-pointer text-left"
                         style={{
                           backgroundColor: themeColor + (isExpanded ? '16' : '08'),
                           border: isExpanded ? `1px solid ${themeColor}44` : undefined,
@@ -44,7 +44,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                       </button>
                       {isExpanded && (
                         <div
-                          className="mt-1 ml-3 mr-1 px-3 py-2 rounded text-xs"
+                          className="mt-1 ml-3 mr-1 px-3 py-2 rounded-sm text-xs"
                           style={{
                             backgroundColor: themeColor + '10',
                             border: `1px solid ${themeColor}28`,
@@ -105,19 +105,19 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                     <button
                       type="button"
                       onClick={() => setExpandedChild(isExpanded ? null : collab.id)}
-                      className="w-full px-3 py-2 rounded text-xs flex items-center gap-2 transition-colors hover:brightness-110 cursor-pointer text-left"
+                      className="w-full px-3 py-2 rounded-sm text-xs flex items-center gap-2 transition-colors hover:brightness-110 cursor-pointer text-left"
                       style={{
                         backgroundColor: collabColor + (isExpanded ? '18' : '0c'),
                         border: `1px solid ${collabColor}${isExpanded ? '66' : '33'}`,
                       }}
                     >
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0"
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm shrink-0"
                         style={{ backgroundColor: collabColor + '22', color: collabColor }}>
                         {t('nodeDetail.dioscuri.collaborationBadge')}
                       </span>
                       <span className="text-white/80 font-medium">{collab.label}</span>
                       <span
-                        className="text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0"
+                        className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm shrink-0"
                         style={statusStyle}
                       >
                         {statusLabel}
@@ -126,7 +126,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                     </button>
                     {isExpanded && (
                       <div
-                        className="mt-1 px-3 py-2 rounded text-xs"
+                        className="mt-1 px-3 py-2 rounded-sm text-xs"
                         style={{
                           backgroundColor: collabColor + '0c',
                           border: `1px solid ${collabColor}33`,
@@ -178,7 +178,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                 href={node.community_links.telegram}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.telegramBot')} ↗
@@ -189,7 +189,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                 href={node.community_links.telegram_channel}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.telegramChannel')} ↗
@@ -200,7 +200,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                 href={node.community_links.discord}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.discord')} ↗
@@ -211,7 +211,7 @@ export default function DioscuriCard({ node, themeColor, mobile, t, expandedChil
                 href={node.community_links.github}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.github')} ↗

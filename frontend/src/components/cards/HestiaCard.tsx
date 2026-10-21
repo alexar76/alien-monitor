@@ -16,7 +16,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
     return (
       <div className="mb-4" onClick={(e) => e.stopPropagation()}>
         <div
-          className="px-3 py-2 rounded text-[11px] font-mono leading-relaxed"
+          className="px-3 py-2 rounded-sm text-[11px] font-mono leading-relaxed"
           style={{ background: '#ff9a3c12', border: '1px solid #ff9a3c44', color: '#ff9a3c' }}
         >
           {t(
@@ -38,7 +38,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
       <div
-        className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+        className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
         style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}
       >
         <div className="text-white/70 mb-1">
@@ -63,11 +63,11 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 mb-3">
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('hearth.version', undefined, 'Version')}:</span>{' '}
           <span style={{ color: themeColor }}>{live.version || '—'}</span>
         </div>
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('hearth.runtime', undefined, 'Runtime')}:</span>{' '}
           <span style={{ color: themeColor }}>{live.runtime || '—'}</span>
         </div>
@@ -88,7 +88,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
       <div className="space-y-1 mb-3 max-h-40 overflow-y-auto">
         {tenants.length > 0 ? (
           tenants.map((row, i) => (
-            <div key={row.slug || i} className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+            <div key={row.slug || i} className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-white/60 truncate">{row.slug || '—'}</span>
                 <span className="text-white/35 ml-auto">{row.status || '—'}</span>
@@ -123,7 +123,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
             href={node.links.console}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{
               backgroundColor: themeColor + '1e',
               border: `1px solid ${themeColor}55`,
@@ -138,7 +138,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
             href={node.links?.pages || node.links?.landing || node.url}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: EMBER + '18', border: `1px solid ${EMBER}44`, color: EMBER }}
           >
             {t('hearth.open_landing', undefined, 'Open HESTIA landing')} ↗
@@ -149,7 +149,7 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
             href={node.links.github}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: '#a855f718', border: '1px solid #a855f744', color: '#c4b5fd' }}
           >
             {t('hearth.open_repo', undefined, 'Open HESTIA repo')} ↗

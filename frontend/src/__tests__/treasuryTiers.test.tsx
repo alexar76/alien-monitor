@@ -73,7 +73,7 @@ function paint(node: EcoNode) {
 /** The rendered row for one tier, so an assertion cannot accidentally match a neighbour's text. */
 function row(label: string): HTMLElement {
   const heading = screen.getByText(label, { selector: 'span' });
-  const box = heading.closest('div.rounded');
+  const box = heading.closest('div.rounded-sm');
   if (!box) throw new Error(`no row found for tier ${label}`);
   return box as HTMLElement;
 }

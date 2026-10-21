@@ -120,7 +120,7 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
     <div
       key={m.key}
       title={m.title}
-      className="flex flex-col items-center min-w-[4.25rem] shrink-0 snap-start"
+      className="flex flex-col items-center min-w-17 shrink-0 snap-start"
     >
       <div
         className="text-base md:text-lg font-mono font-bold tabular-nums"
@@ -189,7 +189,7 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
 
         {/* UNI scenario metrics */}
         {mode === 'universe' && scenario && (
-          <div className="flex items-center gap-3 md:gap-4 md:pl-4 md:border-l border-[#1a2332] overflow-x-auto pb-0.5 snap-x md:overflow-visible shrink-0">
+          <div className="flex items-center gap-3 md:gap-4 md:pl-4 md:border-l border-alien-border overflow-x-auto pb-0.5 snap-x md:overflow-visible shrink-0">
             <div className="flex flex-col items-center min-w-[60px]">
               <div className="text-sm font-mono font-bold" style={{ color: scenario.phase_color }}>
                 {t(`scenario.${scenario.phase}`, undefined, scenario.phase)}
@@ -197,13 +197,13 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
               <div className="text-[10px] font-mono opacity-50">{t('metrics.phase')}</div>
             </div>
             <div className="flex flex-col items-center min-w-[60px]">
-              <div className="text-sm font-mono font-bold text-[#ffdd00]">
+              <div className="text-sm font-mono font-bold text-alien-yellow">
                 ${scenario.funding_total.toFixed(0)}
               </div>
               <div className="text-[10px] font-mono opacity-50">{t('metrics.funding')}</div>
             </div>
             <div className="flex flex-col items-center min-w-[60px]">
-              <div className="text-sm font-mono font-bold text-[#00ff88]">
+              <div className="text-sm font-mono font-bold text-alien-green">
                 {scenario.buyer_rounds}
               </div>
               <div className="text-[10px] font-mono opacity-50">{t('metrics.buyerRnd')}</div>
@@ -216,7 +216,7 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
             </div>
             {/* Phase progress bar */}
             <div className="flex flex-col items-center min-w-[60px]">
-              <div className="w-12 h-1.5 rounded-full bg-[#1a2332] overflow-hidden">
+              <div className="w-12 h-1.5 rounded-full bg-alien-border overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{
@@ -233,7 +233,7 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
         )}
 
         {/* Divider + TPS / Gas / Blockchain analytics */}
-        <div className="flex items-center gap-3 md:gap-4 md:pl-4 md:border-l border-[#1a2332] overflow-x-auto pb-0.5 snap-x md:overflow-visible shrink-0">
+        <div className="flex items-center gap-3 md:gap-4 md:pl-4 md:border-l border-alien-border overflow-x-auto pb-0.5 snap-x md:overflow-visible shrink-0">
           {(mode === 'universe' || mode === 'real') && summary.blockchain_ready ? (
             <>
               <div className="flex flex-col items-center">
@@ -243,13 +243,13 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
                 <div className="text-[10px] font-mono opacity-50">{t('metrics.block')}</div>
               </div>
               <div className="flex flex-col items-center">
-                <div className="text-sm font-mono text-[#00ff88]">
+                <div className="text-sm font-mono text-alien-green">
                   {summary.onchain_tx_count ?? '--'}
                 </div>
                 <div className="text-[10px] font-mono opacity-50">{t('metrics.onchainTx')}</div>
               </div>
               <div className="flex flex-col items-center">
-                <div className="text-sm font-mono text-[#ffdd00]">
+                <div className="text-sm font-mono text-alien-yellow">
                   {summary.gas_gwei?.toLocaleString() ?? '--'}
                 </div>
                 <div className="text-[10px] font-mono opacity-50">{t('metrics.gasPrice')}</div>
@@ -264,7 +264,7 @@ export default function MetricsPanel({ summary, scenario, mode, themeColor }: Pr
                 <div className="text-[10px] font-mono opacity-50">{t('metrics.solanaTps')}</div>
               </div>
               <div className="flex flex-col items-center">
-                <div className="text-sm font-mono text-[#ffdd00]">
+                <div className="text-sm font-mono text-alien-yellow">
                   {summary.gas_gwei ?? '--'} GWEI
                 </div>
                 <div className="text-[10px] font-mono opacity-50">{t('metrics.ethGas')}</div>

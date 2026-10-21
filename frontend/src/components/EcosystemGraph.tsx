@@ -840,7 +840,7 @@ function StarCluster({
       ))}
       <Html distanceFactor={14} position={[0, 0.9, 0]} center>
         <div
-          className="text-[9px] font-mono px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap"
+          className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm pointer-events-none whitespace-nowrap"
           style={{
             color: clusterColor,
             background: 'rgba(0,0,0,0.55)',

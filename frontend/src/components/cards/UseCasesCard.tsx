@@ -30,7 +30,7 @@ export default function UseCasesCard({
         {boards.map((b) => (
           <span
             key={b}
-            className="px-2 py-0.5 rounded text-[10px] font-mono"
+            className="px-2 py-0.5 rounded-sm text-[10px] font-mono"
             style={{
               border: `1px solid ${themeColor}44`,
               color: themeColor,

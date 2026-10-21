@@ -549,7 +549,7 @@ class ExternalAIBuyer:
         """(w3, token, unlocked accounts, reason) for the chain THIS HUB verifies on.
 
         The realm's own chain is the default and the only one most deployments have. The
-        bubble is not one of them: `my-vps` runs the monitor's universe Anvil on
+        bubble is not one of them: `factory-vps` runs the monitor's universe Anvil on
         127.0.0.1:8545 and the hub's bubble Anvil on 172.17.0.1:8546, and the hub reads
         deposits from the second one (`AIMARKET_RPC_BASE`). Both answer chain id 31337 and
         both carry the same deterministic addresses from the public test mnemonic — so a

@@ -43,7 +43,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
             const sim = Math.max(0, total - live);
             return (
               <div
-                className="mb-3 px-3 py-2 rounded text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
+                className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
                 style={{ backgroundColor: themeColor + '10', border: `1px solid ${themeColor}30`, color: themeColor }}
               >
                 {live > 0 && (
@@ -76,7 +76,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                 onChange={(e) => setSensorQ(e.target.value)}
                 placeholder={t('gaia.search', undefined, 'Search id, site, model, field…')}
                 aria-label={t('gaia.search', undefined, 'Search id, site, model, field…')}
-                className="w-full mb-2 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-none"
+                className="w-full mb-2 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-hidden"
                 style={{ border: `1px solid ${themeColor}33` }}
               />
               <div className="space-y-2 max-h-64 overflow-auto pr-1">
@@ -93,14 +93,14 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                   return (
                     <div
                       key={d.id}
-                      className="px-3 py-2 rounded"
+                      className="px-3 py-2 rounded-sm"
                       style={{ backgroundColor: themeColor + '0d', border: `1px solid ${themeColor}22`, borderLeft: `3px solid ${accent}` }}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-mono font-semibold" style={{ color: themeColor }}>{d.id}</span>
                         <span className="flex items-center gap-1 whitespace-nowrap">
                           <span
-                            className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
+                            className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-sm"
                             style={d.live
                               ? { backgroundColor: '#43e65a26', color: '#43e65a', border: '1px solid #43e65a66' }
                               : { backgroundColor: '#8a8a8a22', color: '#b4b4b4', border: '1px solid #8a8a8a44' }}
@@ -108,7 +108,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                             {d.live ? t('gaia.kind_live', undefined, '🌍 LIVE') : t('gaia.kind_sim', undefined, '⚙ SIM')}
                           </span>
                           <span
-                            className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+                            className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm"
                             style={{ backgroundColor: statusBg, color: statusFg }}
                           >
                             {faulted
@@ -128,7 +128,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                           {d.fields.map((f) => (
                             <span
                               key={f.name}
-                              className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+                              className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm"
                               style={{ backgroundColor: themeColor + '14', color: themeColor }}
                             >
                               {f.name}{f.unit ? ` (${f.unit})` : ''}
@@ -154,7 +154,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                   href={node.links.landing}
                   target="_blank"
                   rel="noreferrer"
-                  className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                  className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                   style={{ backgroundColor: themeColor + '1e', border: `1px solid ${themeColor}55`, color: themeColor }}
                 >
                   {t('gaia.landing', undefined, '🌍 Open GAIA gateway')} ↗
@@ -165,7 +165,7 @@ export default function GaiaCard({ node, themeColor, mobile, t, sensorQ, setSens
                   href={node.links.github}
                   target="_blank"
                   rel="noreferrer"
-                  className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                  className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                   style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
                 >
                   {t('nodeDetail.community.github')} ↗

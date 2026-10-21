@@ -12,10 +12,14 @@
     <link rel="apple-touch-icon" href="./favicon.svg" />
     <link href="/fonts/fonts.css" rel="stylesheet" />
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #0a0a0f; color: #e0e0e0; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; min-height: 100dvh; }
-      canvas { display: block; touch-action: none; }
-      #root { width: 100%; min-height: 100dvh; }
+      /* In @layer base: Tailwind v4 keeps utilities in a cascade layer, and an unlayered
+         rule (this pre-paint reset) would beat every px-/py- utility on the page. */
+      @layer base {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: #e0e0e0; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; min-height: 100dvh; }
+        canvas { display: block; touch-action: none; }
+        #root { width: 100%; min-height: 100dvh; }
+      }
     </style>
   </head>
   <body>

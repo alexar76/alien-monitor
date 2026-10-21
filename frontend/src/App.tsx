@@ -939,7 +939,7 @@ export default function App() {
   }[theme];
 
   return (
-    <div className="relative w-full min-h-[100dvh] h-[100dvh] bg-[#0a0a0f] overflow-hidden">
+    <div className="relative w-full min-h-dvh h-dvh bg-alien-bg overflow-hidden">
       {/* Grid background */}
       <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" />
 
@@ -948,7 +948,7 @@ export default function App() {
 
       {state?.layer_errors?.some((e) => /prometheus/i.test(e)) && (
         <div
-          className="absolute top-2 left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded border border-amber-500/40 bg-amber-950/80 px-3 py-1.5 text-center text-[11px] font-mono text-amber-200/90 md:top-3 md:text-xs"
+          className="absolute top-2 left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded-sm border border-amber-500/40 bg-amber-950/80 px-3 py-1.5 text-center text-[11px] font-mono text-amber-200/90 md:top-3 md:text-xs"
           role="status"
         >
           {t('monitor.prometheusDegraded')}
@@ -960,7 +960,7 @@ export default function App() {
           channel/open every round — visible only as one 400 in the container log. */}
       {state?.summary?.economy_stalled && (
         <div
-          className="absolute top-2 left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded border border-red-500/40 bg-red-950/80 px-3 py-1.5 text-center text-[11px] font-mono text-red-200/90 md:top-3 md:text-xs"
+          className="absolute top-2 left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded-sm border border-red-500/40 bg-red-950/80 px-3 py-1.5 text-center text-[11px] font-mono text-red-200/90 md:top-3 md:text-xs"
           role="status"
           title={state.summary.economy_stalled}
         >
@@ -984,7 +984,7 @@ export default function App() {
           <span className="text-sm font-mono opacity-70">{t('app.connecting')}</span>
           {connectionError === 'auth' && (
             <form
-              className="pointer-events-auto flex w-full max-w-sm flex-col gap-2 rounded border border-amber-400/30 bg-black/70 p-4"
+              className="pointer-events-auto flex w-full max-w-sm flex-col gap-2 rounded-sm border border-amber-400/30 bg-black/70 p-4"
               onSubmit={handleMonitorLogin}
             >
               <span className="text-xs font-mono text-amber-200/90 leading-relaxed">
@@ -996,12 +996,12 @@ export default function App() {
                 value={authToken}
                 onChange={(event) => setAuthToken(event.target.value)}
                 placeholder={t('app.authTokenPlaceholder')}
-                className="rounded border border-white/20 bg-black/80 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/70"
+                className="rounded-sm border border-white/20 bg-black/80 px-3 py-2 text-sm text-white outline-hidden focus:border-cyan-400/70"
               />
               <button
                 type="submit"
                 disabled={authBusy || !authToken.trim()}
-                className="rounded border border-cyan-400/50 px-3 py-2 text-xs font-mono uppercase text-cyan-200 disabled:opacity-40"
+                className="rounded-sm border border-cyan-400/50 px-3 py-2 text-xs font-mono uppercase text-cyan-200 disabled:opacity-40"
               >
                 {authBusy ? t('app.authConnecting') : t('app.authSubmit')}
               </button>
@@ -1192,7 +1192,7 @@ export default function App() {
 
       {/* Mode indicator */}
       {mode && (
-      <div className="absolute bottom-[4.75rem] left-2 z-10 flex items-center gap-2 md:bottom-4 md:left-4 max-w-[55vw]">
+      <div className="absolute bottom-19 left-2 z-10 flex items-center gap-2 md:bottom-4 md:left-4 max-w-[55vw]">
         <div
           className="w-2 h-2 rounded-full animate-pulse"
           style={{

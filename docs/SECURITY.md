@@ -71,15 +71,16 @@ No cap on incoming WebSocket message size — could allow memory exhaustion.
 | @react-three/fiber | R3F renderer — no server-side exposure |
 | @react-three/postprocessing | GPU shader only — no network access |
 | react 18.3 | Stable release, low risk |
-| vite 5.4 | Build tool only — not in production bundle |
-| tailwindcss 3.4 | CSS generator only — build-time |
+| vite 6.4 | Build tool only — not in production bundle |
+| tailwindcss 4.3 | CSS generator only — build-time (v4 dropped the chokidar/braces chain that `npm audit` flagged high under 3.4) |
 
 ### Findings
 
-**F-4: npm audit shows 2 moderate vulnerabilities** — Severity: Low
-These are in dev-only build tooling (not in production bundle).
-- **Mitigation:** Run `npm audit fix` periodically.
-- **Status:** Accepted — no production impact.
+**F-4: npm audit in dev-only build tooling** — Severity: Low
+Tailwind 3.4 pulled chokidar → micromatch → braces, which `npm audit` rated high (7 findings, 5 high,
+none in the production bundle). Since the move to Tailwind 4 (2026-10-21) `npm audit` reports 0.
+- **Mitigation:** CI runs `npm audit --audit-level=high` on every push (npm-dependency-audit.yml).
+- **Status:** Resolved.
 
 ---
 

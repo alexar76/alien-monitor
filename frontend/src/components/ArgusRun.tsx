@@ -230,7 +230,7 @@ export default function ArgusRun({ node, mode, themeColor, onClose, mobile = fal
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <span
-              className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded tracking-wider"
+              className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded-sm tracking-wider"
               style={{ color: modeColor, backgroundColor: modeColor + '1a', border: `1px solid ${modeColor}44` }}
             >
               {modeBadge}
@@ -303,7 +303,7 @@ export default function ArgusRun({ node, mode, themeColor, onClose, mobile = fal
                 {selectedModes.map((m) => (
                   <span
                     key={`m-${m}`}
-                    className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded"
+                    className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded-sm"
                     style={{
                       color: m === 'uni' ? '#c4a0ff' : '#00f0ff',
                       border: `1px solid ${m === 'uni' ? '#c4a0ff44' : '#00f0ff44'}`,
@@ -315,7 +315,7 @@ export default function ArgusRun({ node, mode, themeColor, onClose, mobile = fal
                 {selectedWallets.map((w) => (
                   <span
                     key={`w-${w.chain}-${w.short}`}
-                    className="text-[8px] font-mono px-1.5 py-0.5 rounded text-white/55"
+                    className="text-[8px] font-mono px-1.5 py-0.5 rounded-sm text-white/55"
                     style={{ border: '1px solid #ffffff18' }}
                     title={w.address}
                   >
@@ -338,7 +338,7 @@ export default function ArgusRun({ node, mode, themeColor, onClose, mobile = fal
                 {t('argus.liveStatus', undefined, 'Live agent')}
               </span>
               <span
-                className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded tracking-wider"
+                className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded-sm tracking-wider"
                 style={{
                   color: isOffline ? '#ff3b6b' : economyOn ? '#00ff88' : '#ffaa00',
                   backgroundColor: (isOffline ? '#ff3b6b' : economyOn ? '#00ff88' : '#ffaa00') + '1a',
@@ -479,7 +479,7 @@ export default function ArgusRun({ node, mode, themeColor, onClose, mobile = fal
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-mono font-bold" style={{ color }}>{b.title}</span>
                         {b.status === 'blocked' && (
-                          <span className="text-[8px] font-mono font-black px-1.5 py-0.5 rounded" style={{ color: '#fff', backgroundColor: color }}>
+                          <span className="text-[8px] font-mono font-black px-1.5 py-0.5 rounded-sm" style={{ color: '#fff', backgroundColor: color }}>
                             {t('argus.blocked', undefined, 'BLOCKED')}
                           </span>
                         )}

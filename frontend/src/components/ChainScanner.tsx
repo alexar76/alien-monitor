@@ -234,7 +234,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
             {t('scanner.title', undefined, 'CHAIN SCANNER')}
           </span>
           <span
-            className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0"
+            className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm uppercase tracking-wider shrink-0"
             style={{ color: themeColor, border: `1px solid ${themeColor}44` }}
           >
             {realmLabel}
@@ -256,7 +256,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
           <span className="flex items-center gap-1.5">
             <span className="text-white/30">{t('scanner.showing', undefined, 'SHOWING')}</span>
             <span
-              className="px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold"
+              className="px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-semibold"
               style={{ color: netColor, border: `1px solid ${netColor}55`, background: netColor + '14' }}
             >
               {net.name}{net.chain_id ? ` · ${net.chain_id}` : ''}
@@ -306,13 +306,13 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submitSearch()}
             placeholder={t('scanner.search', undefined, 'tx hash / address')}
-            className="flex-1 min-w-0 bg-black/30 rounded px-2 py-1.5 text-[10px] font-mono text-white/80 outline-none border"
+            className="flex-1 min-w-0 bg-black/30 rounded-sm px-2 py-1.5 text-[10px] font-mono text-white/80 outline-hidden border"
             style={{ borderColor: themeColor + '22' }}
           />
           <button
             type="button"
             onClick={submitSearch}
-            className="text-[10px] font-mono px-2 py-1.5 rounded shrink-0"
+            className="text-[10px] font-mono px-2 py-1.5 rounded-sm shrink-0"
             style={{ color: themeColor, border: `1px solid ${themeColor}44` }}
           >
             {t('scanner.go', undefined, 'GO')}
@@ -355,7 +355,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
               >
                 <span className="text-white/30 shrink-0 w-12">#{row.block}</span>
                 <span
-                  className="shrink-0 px-1 rounded uppercase text-[8px]"
+                  className="shrink-0 px-1 rounded-sm uppercase text-[8px]"
                   style={{ color: methodColor(row.method), border: `1px solid ${methodColor(row.method)}33` }}
                 >
                   {row.method}
@@ -364,7 +364,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
                   {party(row.from, row.from_label)} <span className="text-white/25">→</span> {party(row.to, row.to_label)}
                 </span>
                 {row.value_wei !== '0' && (
-                  <span className="shrink-0 text-[#00ff88]">{weiToEth(row.value_wei)}</span>
+                  <span className="shrink-0 text-alien-green">{weiToEth(row.value_wei)}</span>
                 )}
               </button>
             ))}
@@ -381,7 +381,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
                 </Row>
                 <Row label={t('scanner.status', undefined, 'STATUS')}>
                   {tx.status === 1 ? (
-                    <span className="text-[#00ff88]">✔ {t('scanner.success', undefined, 'SUCCESS')}</span>
+                    <span className="text-alien-green">✔ {t('scanner.success', undefined, 'SUCCESS')}</span>
                   ) : tx.status === 0 ? (
                     <span className="text-[#ff4d5e]">✖ {t('scanner.reverted', undefined, 'REVERTED')}</span>
                   ) : (
@@ -451,7 +451,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
                         : t('scanner.wallet', undefined, 'WALLET')}
                     </span>
                   </Row>
-                  <Row label={t('scanner.balance', undefined, 'BALANCE')}><span className="text-[#00ff88]">{weiToEth(addr.balance_wei)}</span></Row>
+                  <Row label={t('scanner.balance', undefined, 'BALANCE')}><span className="text-alien-green">{weiToEth(addr.balance_wei)}</span></Row>
                   <Row label={t('scanner.nonce', undefined, 'NONCE')}><span className="text-white/70">{addr.nonce}</span></Row>
                 </div>
                 <div className="px-4 py-1.5 text-white/40 uppercase tracking-wider">
@@ -466,7 +466,7 @@ export default function ChainScanner({ themeColor, realm, onClose, mobile = fals
                     style={{ borderColor: '#ffffff08' }}
                   >
                     <span
-                      className="shrink-0 px-1 rounded uppercase text-[8px]"
+                      className="shrink-0 px-1 rounded-sm uppercase text-[8px]"
                       style={{
                         color: row.direction === 'out' ? '#ff9d4d' : '#00ff88',
                         border: `1px solid ${row.direction === 'out' ? '#ff9d4d' : '#00ff88'}33`,

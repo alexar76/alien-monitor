@@ -1,6 +1,108 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-alien-bg: #0a0a0f;
+  --color-alien-panel: #0d1117;
+  --color-alien-border: #1a2332;
+  --color-alien-cyan: #00f0ff;
+  --color-alien-magenta: #ff00ff;
+  --color-alien-green: #00ff88;
+  --color-alien-yellow: #ffdd00;
+  --color-alien-red: #ff3355;
+  --color-alien-purple: #7b2fff;
+  --color-alien-blue: #3366ff;
+
+  --font-mono: JetBrains Mono, Fira Code, monospace;
+  --font-sans: Inter, system-ui, sans-serif;
+
+  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-scan: scan 3s linear infinite;
+  --animate-dataflow: dataflow 1s linear infinite;
+  --animate-slide-in: slideIn 0.25s ease-out;
+  --animate-slide-up: slideUp 0.28s ease-out;
+
+  @keyframes slideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pulseGlow {
+    0%,
+    100% {
+      box-shadow: 0 0 5px var(--glow-color, #00f0ff);
+    }
+    50% {
+      box-shadow:
+        0 0 20px var(--glow-color, #00f0ff),
+        0 0 40px var(--glow-color, #00f0ff);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes scan {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes dataflow {
+    0% {
+      stroke-dashoffset: 20;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Tailwind v4's preflight no longer gives buttons a pointer cursor; v3's did. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 .factory-agent-card .factory-agent-title,
 .factory-agent-card .factory-agent-id {

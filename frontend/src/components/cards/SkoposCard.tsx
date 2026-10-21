@@ -22,7 +22,7 @@ export default function SkoposCard({ node, themeColor, t }: Props) {
                 href={links.dashboard}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '1e', border: `1px solid ${themeColor}55`, color: themeColor }}
               >
                 {t('skopos.dashboard', undefined, '🛰️ Open SKOPOS dashboard')} ↗
@@ -33,7 +33,7 @@ export default function SkoposCard({ node, themeColor, t }: Props) {
                 href={links.github}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.github')} ↗
@@ -44,7 +44,7 @@ export default function SkoposCard({ node, themeColor, t }: Props) {
                 href={links.docs}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('skopos.docs', undefined, 'Documentation')} ↗
@@ -55,7 +55,7 @@ export default function SkoposCard({ node, themeColor, t }: Props) {
                 href={links.integration}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('skopos.integration', undefined, 'Ecosystem integration')} ↗

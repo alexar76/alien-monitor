@@ -492,7 +492,7 @@ export default function MomusEye({ live, accent, mobile = false, fps: _fps = 24 
           </div>
         )}
         {signal.live && stillReason && (
-          <div className="absolute right-1.5 top-1.5 px-1.5 py-0.5 rounded text-[9px] font-mono"
+          <div className="absolute right-1.5 top-1.5 px-1.5 py-0.5 rounded-sm text-[9px] font-mono"
                style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.5)' }}>
             {stillReason}
           </div>

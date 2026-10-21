@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Oracle 3D scene</title>
     <style>
-      html, body, #root { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #04030f; }
-      p { color: #cbd5e1; font: 14px monospace; padding: 24px; }
+      /* In @layer base: Tailwind v4 keeps utilities in a cascade layer, and an unlayered
+         rule (this pre-paint reset) would beat every px-/py- utility on the page. */
+      @layer base {
+        html, body, #root { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #04030f; }
+        p { color: #cbd5e1; font: 14px monospace; padding: 24px; }
+      }
     </style>
   </head>
   <body>

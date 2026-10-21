@@ -51,7 +51,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
     return (
       <div className="mb-4" onClick={(e) => e.stopPropagation()}>
         <div
-          className="px-3 py-2 rounded text-[11px] font-mono leading-relaxed"
+          className="px-3 py-2 rounded-sm text-[11px] font-mono leading-relaxed"
           style={{ background: '#ffcc3312', border: '1px solid #ffcc3344', color: '#ffcc33' }}
         >
           {t(
@@ -75,7 +75,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
       <div
-        className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+        className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
         style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}
       >
         <div className="text-white/70 mb-1">
@@ -101,11 +101,11 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 mb-3">
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('sca.mode', undefined, 'Mode')}:</span>{' '}
           <span style={{ color: mode.color }}>{t(mode.labelKey, undefined, mode.fallback)}</span>
         </div>
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('sca.endpoint', undefined, 'Endpoint')}:</span>{' '}
           <span style={{ color: live.configured ? '#43e65a' : '#ff6b3d' }}>
             {live.configured
@@ -121,7 +121,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
 
       {latestDecision ? (
         <div
-          className="mb-3 px-3 py-2.5 rounded"
+          className="mb-3 px-3 py-2.5 rounded-sm"
           style={{
             background: `linear-gradient(135deg, ${decisionColor(latestDecision)}14, #a855f722)`,
             border: `1px solid ${decisionColor(latestDecision)}55`,
@@ -133,7 +133,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
         >
           <div className="flex flex-wrap items-center gap-1.5 mb-2">
             <span
-              className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider"
+              className="px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase tracking-wider"
               style={{
                 color: decisionColor(latestDecision),
                 background: decisionColor(latestDecision) + '22',
@@ -159,7 +159,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
           <div className="mt-1.5 flex items-center gap-2 text-[10px] font-mono">
             <span className="text-white/40">{t('sca.metis', undefined, 'Metis')}:</span>
             <span
-              className="px-1.5 py-0.5 rounded"
+              className="px-1.5 py-0.5 rounded-sm"
               style={{
                 color: metisColor(latestMetis),
                 background: metisColor(latestMetis) + '22',
@@ -193,12 +193,12 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
             return (
               <div
                 key={row.audit_id || `${row.capability_id}-${i}`}
-                className="px-2 py-1.5 rounded bg-white/5 text-[11px]"
+                className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px]"
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {d ? (
                     <span
-                      className="px-1 rounded text-[9px] font-mono uppercase"
+                      className="px-1 rounded-sm text-[9px] font-mono uppercase"
                       style={{
                         background: decisionColor(d) + '22',
                         color: decisionColor(d),
@@ -243,7 +243,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
             href={node.links.landing}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{
               backgroundColor: themeColor + '1e',
               border: `1px solid ${themeColor}55`,
@@ -258,7 +258,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
             href={node.links.tutorial}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{
               backgroundColor: '#66f7c518',
               border: '1px solid #66f7c544',
@@ -273,7 +273,7 @@ export default function ThemisCard({ node, themeColor, t }: Props) {
             href={node.links?.github || node.url}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{
               backgroundColor: '#a855f718',
               border: '1px solid #a855f744',

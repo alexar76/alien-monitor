@@ -4,8 +4,12 @@
     <meta charset="utf-8" />
     <title>scene probe</title>
     <style>
-      html, body { margin: 0; background: #03040a; }
-      #box { position: relative; width: 420px; height: 190px; margin: 24px; }
+      /* In @layer base: Tailwind v4 keeps utilities in a cascade layer, and an unlayered
+         rule (this pre-paint reset) would beat every px-/py- utility on the page. */
+      @layer base {
+        html, body { margin: 0; background: #03040a; }
+        #box { position: relative; width: 420px; height: 190px; margin: 24px; }
+      }
     </style>
   </head>
   <body>

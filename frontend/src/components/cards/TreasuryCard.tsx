@@ -60,7 +60,7 @@ export default function TreasuryCard({ node, themeColor, t }: Props) {
 
         return (
           <div className="mb-4" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+            <div className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
                  style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}>
               <div className="text-white/70 mb-1">🏦 {t('treasury.role', undefined, 'The only key that can pay a bounty')}</div>
               {healthOffline ? (
@@ -78,16 +78,16 @@ export default function TreasuryCard({ node, themeColor, t }: Props) {
             </div>
             {tr.synthetic && (
               /* TEST mode says so in the panel itself, not only in a tooltip. */
-              <div className="mb-2 px-2 py-1 rounded text-[10px] font-mono"
+              <div className="mb-2 px-2 py-1 rounded-sm text-[10px] font-mono"
                    style={{ background: '#c07cff1e', border: '1px solid #c07cff55', color: '#c07cff' }}>
                 {t('treasury.synthetic_card', undefined, '⚗ TEST mode — every figure below is synthetic, nothing was measured')}
               </div>
             )}
             {!healthOffline && (
               <div className="flex flex-wrap gap-1.5 mb-3">
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono" style={{ background: '#43e65a22', color: '#43e65a' }}>paid {c.paid || 0}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono" style={{ background: '#ffcc3322', color: '#ffcc33' }}>held {c.held || 0}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono" style={{ background: '#ff6b3d22', color: '#ff6b3d' }}>refused {c.refused || 0}</span>
+                <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono" style={{ background: '#43e65a22', color: '#43e65a' }}>paid {c.paid || 0}</span>
+                <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono" style={{ background: '#ffcc3322', color: '#ffcc33' }}>held {c.held || 0}</span>
+                <span className="px-2 py-0.5 rounded-sm text-[10px] font-mono" style={{ background: '#ff6b3d22', color: '#ff6b3d' }}>refused {c.refused || 0}</span>
               </div>
             )}
 
@@ -114,17 +114,17 @@ export default function TreasuryCard({ node, themeColor, t }: Props) {
                       && ti.payout_optin_required === true && (ti.errors || []).length === 0
                       && figs.length > 0 && figs.every(([, v]) => Number(v) === 0);
                     return (
-                      <div key={ti.tier} className="px-2 py-1.5 rounded bg-white/5 mb-1.5">
+                      <div key={ti.tier} className="px-2 py-1.5 rounded-sm bg-white/5 mb-1.5">
                         <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono">
                           <span className="font-bold" style={{ color: col }}>{ti.label || ti.tier.toUpperCase()}</span>
-                          <span className="px-1 rounded" style={{ background: col + '22', color: col }}>{stateText}</span>
+                          <span className="px-1 rounded-sm" style={{ background: col + '22', color: col }}>{stateText}</span>
                           {ti.simulated && (
-                            <span className="px-1 rounded" style={{ background: '#ffcc3322', color: '#ffcc33' }}>
+                            <span className="px-1 rounded-sm" style={{ background: '#ffcc3322', color: '#ffcc33' }}>
                               {t('treasury.simulated_tag', undefined, 'simulated')}
                             </span>
                           )}
                           {ti.synthetic && (
-                            <span className="px-1 rounded" style={{ background: '#c07cff22', color: '#c07cff' }}>
+                            <span className="px-1 rounded-sm" style={{ background: '#c07cff22', color: '#c07cff' }}>
                               {t('treasury.synthetic_tag', undefined, 'synthetic')}
                             </span>
                           )}
@@ -162,7 +162,7 @@ export default function TreasuryCard({ node, themeColor, t }: Props) {
                             {t('treasury.partial', undefined, 'partial read')}: {(ti.errors || [])[0]}
                           </div>
                         )}
-                        <div className="mt-1 text-[10px] font-mono text-white/35 break-words">{provenance(ti)}</div>
+                        <div className="mt-1 text-[10px] font-mono text-white/35 wrap-break-word">{provenance(ti)}</div>
                         {/* Offered even when our own read failed: the contract address is known
                             statically, so the reader can go and check what we could not. */}
                         {ti.explorer && ti.state !== 'not_connected' && (
@@ -180,7 +180,7 @@ export default function TreasuryCard({ node, themeColor, t }: Props) {
             )}
             {node.links?.github && (
               <a href={node.links.github} target="_blank" rel="noreferrer"
-                 className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                 className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                  style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}>
                 {t('nodeDetail.community.github')} ↗
               </a>

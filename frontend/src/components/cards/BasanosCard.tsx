@@ -31,7 +31,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
     return (
       <div className="mb-4" onClick={(e) => e.stopPropagation()}>
         <div
-          className="px-3 py-2 rounded text-[11px] font-mono leading-relaxed"
+          className="px-3 py-2 rounded-sm text-[11px] font-mono leading-relaxed"
           style={{ background: '#ffcc3312', border: '1px solid #ffcc3344', color: '#ffcc33' }}
         >
           {t(
@@ -57,7 +57,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
       <div
-        className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+        className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
         style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}
       >
         <div className="text-white/70 mb-1">
@@ -83,11 +83,11 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-1.5 mb-3">
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('touchstone.version', undefined, 'Version')}:</span>{' '}
           <span style={{ color: themeColor }}>{live.version || '—'}</span>
         </div>
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('touchstone.intel', undefined, 'Intel')}:</span>{' '}
           <span style={{ color: live.intel_enabled ? '#43e65a' : '#7a8699' }}>
             {live.intel_enabled
@@ -98,7 +98,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
       </div>
 
       {live.capability_id ? (
-        <div className="mb-3 px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="mb-3 px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <span className="text-white/40">{t('touchstone.capability', undefined, 'Capability')}:</span>{' '}
           <span className="text-white/70 break-all">{live.capability_id}</span>
         </div>
@@ -108,7 +108,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
         {t('touchstone.learned', undefined, 'What it has learned')}
       </div>
       <div className="grid grid-cols-3 gap-1.5 mb-3">
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <div className="text-white/40 text-[9px] uppercase">
             {t('touchstone.memos', undefined, 'Memos')}
           </div>
@@ -118,13 +118,13 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
             / {memos.hits ?? 0} {t('touchstone.hits', undefined, 'hits')}
           </span>
         </div>
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <div className="text-white/40 text-[9px] uppercase">
             {t('touchstone.cards', undefined, 'Cards')}
           </div>
           <span style={{ color: themeColor }}>{intel.cards ?? 0}</span>
         </div>
-        <div className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+        <div className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
           <div className="text-white/40 text-[9px] uppercase">
             {t('touchstone.pairs', undefined, 'Pairs')}
           </div>
@@ -147,9 +147,9 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
             {categories.map(([name, score]) => (
               <div key={name} className="flex items-center gap-2 text-[10px] font-mono">
                 <span className="text-white/55 w-28 truncate">{name}</span>
-                <span className="flex-1 h-1.5 rounded bg-white/8 overflow-hidden">
+                <span className="flex-1 h-1.5 rounded-sm bg-white/8 overflow-hidden">
                   <span
-                    className="block h-full rounded"
+                    className="block h-full rounded-sm"
                     style={{
                       width: `${Math.max(2, Math.min(100, topScore > 0 ? (score / topScore) * 100 : 0))}%`,
                       background: `linear-gradient(90deg, ${STONE}66, ${STONE})`,
@@ -169,7 +169,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
       <div className="space-y-1 mb-3">
         {lessons.length > 0 ? (
           lessons.map((lesson, i) => (
-            <div key={i} className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono text-white/60">
+            <div key={i} className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono text-white/60">
               {lesson}
             </div>
           ))
@@ -186,7 +186,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
       <div className="space-y-1 mb-3 max-h-40 overflow-y-auto">
         {cards.length > 0 ? (
           cards.map((card, i) => (
-            <div key={card.id || i} className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+            <div key={card.id || i} className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-white/60 truncate">{card.id || '—'}</span>
                 {card.severity ? (
@@ -212,7 +212,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
             href={node.links.console}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{
               backgroundColor: themeColor + '1e',
               border: `1px solid ${themeColor}55`,
@@ -227,7 +227,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
             href={node.links?.landing || node.url}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: STONE + '18', border: `1px solid ${STONE}44`, color: STONE }}
           >
             {t('touchstone.open_landing', undefined, 'Open BASANOS landing')} ↗
@@ -238,7 +238,7 @@ export default function BasanosCard({ node, themeColor, t }: Props) {
             href={node.links.github}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: '#a855f718', border: '1px solid #a855f744', color: '#c4b5fd' }}
           >
             {t('touchstone.open_repo', undefined, 'Open BASANOS repo')} ↗

@@ -30,7 +30,7 @@ export default function CryptoNotice({ mode, cryptoEnabled, themeColor }: Props)
   const href = DOC_BY_LOCALE[locale] ?? DOC_BY_LOCALE.en;
 
   return (
-    <div className="absolute bottom-[7.25rem] left-2 z-20 md:bottom-14 md:left-4 max-w-[80vw]">
+    <div className="absolute bottom-29 left-2 z-20 md:bottom-14 md:left-4 max-w-[80vw]">
       <div
         className="glass-panel flex items-center gap-2 rounded-lg px-3 py-1.5"
         style={{ borderColor: '#ffaa0055', boxShadow: '0 0 14px #ffaa0022' }}

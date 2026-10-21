@@ -140,7 +140,7 @@ export default function TransactionFlow({ transactions, events, themeColor, mobi
               >
                 {(item as any).source === 'external' ? (
                   <>
-                    <span className="text-[#ffdd00] font-bold">{t('activity.external')}</span>
+                    <span className="text-alien-yellow font-bold">{t('activity.external')}</span>
                     <span className="text-white/30 mx-1">→</span>
                     <span className="text-white/70">{t('activity.fundingTarget')}</span>
                   </>
@@ -177,7 +177,7 @@ export default function TransactionFlow({ transactions, events, themeColor, mobi
               {/* Token badge */}
               {item.token && (
                 <span
-                  className="text-[8px] px-1 rounded shrink-0"
+                  className="text-[8px] px-1 rounded-sm shrink-0"
                   style={{
                     backgroundColor: (item as any).source === 'external' ? '#ffdd0022' : themeColor + '18',
                     color: (item as any).source === 'external' ? '#ffdd00' : themeColor,

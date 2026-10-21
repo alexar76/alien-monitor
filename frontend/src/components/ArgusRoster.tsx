@@ -182,13 +182,13 @@ export default function ArgusRoster({ themeColor, onSelect, selectedId }: Props)
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t('argus.roster.search', undefined, 'Search name, wallet, id…')}
-          className="flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-none"
+          className="flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-hidden"
           style={{ border: `1px solid ${themeColor}33` }}
         />
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as RosterSort)}
-          className="rounded-lg px-2 py-1.5 text-[10px] font-mono bg-black/40 text-white/70 outline-none max-w-[7.5rem]"
+          className="rounded-lg px-2 py-1.5 text-[10px] font-mono bg-black/40 text-white/70 outline-hidden max-w-30"
           style={{ border: `1px solid ${themeColor}33` }}
           aria-label={t('argus.roster.sort', undefined, 'Sort')}
         >
@@ -216,7 +216,7 @@ export default function ArgusRoster({ themeColor, onSelect, selectedId }: Props)
               key={s || 'all'}
               type="button"
               onClick={() => setStatus(s)}
-              className="text-[9px] font-mono uppercase px-2 py-0.5 rounded tracking-wider"
+              className="text-[9px] font-mono uppercase px-2 py-0.5 rounded-sm tracking-wider"
               style={{
                 color: on ? themeColor : '#8899aa',
                 backgroundColor: on ? themeColor + '22' : 'transparent',
@@ -283,7 +283,7 @@ export default function ArgusRoster({ themeColor, onSelect, selectedId }: Props)
                     {modes.map((m) => (
                       <span
                         key={m}
-                        className="text-[8px] font-mono uppercase px-1 rounded shrink-0"
+                        className="text-[8px] font-mono uppercase px-1 rounded-sm shrink-0"
                         style={{
                           color: m === 'uni' ? '#c4a0ff' : m === 'live' || m === 'real' ? '#00f0ff' : '#8899aa',
                           border: `1px solid ${m === 'uni' ? '#c4a0ff44' : m === 'live' || m === 'real' ? '#00f0ff44' : '#ffffff22'}`,
@@ -294,7 +294,7 @@ export default function ArgusRoster({ themeColor, onSelect, selectedId }: Props)
                     ))}
                     {inst.economy === 'on' && (
                       <span
-                        className="text-[8px] font-mono uppercase px-1 rounded shrink-0"
+                        className="text-[8px] font-mono uppercase px-1 rounded-sm shrink-0"
                         style={{ color: '#00ff88', border: '1px solid #00ff8844' }}
                       >
                         $

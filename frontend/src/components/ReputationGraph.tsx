@@ -604,7 +604,7 @@ export default function ReputationGraph({ themeColor, onClose, monitorState, mod
           full
             ? 'fixed inset-2 rounded-2xl'
             : mobile
-              ? 'fixed inset-x-2 top-[var(--sheet-top)] bottom-[var(--sheet-bottom)] rounded-2xl'
+              ? 'fixed inset-x-2 top-(--sheet-top) bottom-(--sheet-bottom) rounded-2xl'
               : 'absolute right-4 top-32 w-96 max-h-[calc(100vh-220px)]'
         }`}
         style={{
@@ -624,7 +624,7 @@ export default function ReputationGraph({ themeColor, onClose, monitorState, mod
               {t('reputation.title')}
             </span>
             <span
-              className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider"
+              className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm uppercase tracking-wider"
               style={{
                 color: modeColor,
                 backgroundColor: modeColor + '1a',
@@ -736,7 +736,7 @@ export default function ReputationGraph({ themeColor, onClose, monitorState, mod
           {/* Selected-node detail card */}
           {selDetail && (
             <div
-              className="absolute left-2 right-2 bottom-2 rounded-lg border px-3 py-2 backdrop-blur-sm"
+              className="absolute left-2 right-2 bottom-2 rounded-lg border px-3 py-2 backdrop-blur-xs"
               style={{ borderColor: themeColor + '55', background: 'rgba(6,7,14,0.94)' }}
             >
               <div className="flex items-center justify-between gap-2">
@@ -805,7 +805,7 @@ export default function ReputationGraph({ themeColor, onClose, monitorState, mod
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('reputation.searchPlaceholder', undefined, 'find node / host')}
-              className="flex-1 min-w-0 rounded border bg-black/40 px-2 py-1 text-[10px] font-mono text-white/80 outline-none placeholder:text-white/25"
+              className="flex-1 min-w-0 rounded-sm border bg-black/40 px-2 py-1 text-[10px] font-mono text-white/80 outline-hidden placeholder:text-white/25"
               style={{ borderColor: themeColor + '33' }}
               data-testid="reputation-search"
               aria-label={t('reputation.searchPlaceholder', undefined, 'find node / host')}
@@ -835,7 +835,7 @@ export default function ReputationGraph({ themeColor, onClose, monitorState, mod
                       setSelectedId(h.id);
                       selectByIndex(h.index);
                     }}
-                    className="flex items-center gap-2 rounded px-1.5 py-1 text-left text-[10px] font-mono hover:bg-white/5"
+                    className="flex items-center gap-2 rounded-sm px-1.5 py-1 text-left text-[10px] font-mono hover:bg-white/5"
                   >
                     <span className="w-8 shrink-0 text-right text-white/30">#{h.pos}</span>
                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: RANK_CSS(h.rank) }} />

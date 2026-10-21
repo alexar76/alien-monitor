@@ -40,7 +40,7 @@ export default function SignalHuntCard({
         ].map((cell) => (
           <div
             key={cell.k}
-            className="px-2 py-2 rounded"
+            className="px-2 py-2 rounded-sm"
             style={{
               backgroundColor: `${themeColor}0a`,
               border: `1px solid ${themeColor}28`,

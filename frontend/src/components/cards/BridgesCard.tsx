@@ -39,7 +39,7 @@ export default function BridgesCard({ node, themeColor, t }: Props) {
         return (
           <div className="mb-4" onClick={(e) => e.stopPropagation()}>
             {/* What this channel is — descriptive, never counted as traffic. */}
-            <div className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+            <div className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
                  style={{ background: '#00000030', border: `1px solid ${themeColor}33` }}>
               <div className="text-white/70 mb-1">🌉 {t('bridges.channel', undefined, 'Third paid invoke channel · after the hub and the mesh')}</div>
               <div className="text-white/45">{t('bridges.role', undefined, 'Framework-native tools · signed receipts · hard budget ceiling')}</div>
@@ -60,7 +60,7 @@ export default function BridgesCard({ node, themeColor, t }: Props) {
                 const measured = Object.prototype.hasOwnProperty.call(counters, k);
                 return (
                   <div key={k}
-                       className="flex items-center justify-between px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+                       className="flex items-center justify-between px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
                     <span className="text-white/50">{labels[k]}</span>
                     {measured ? (
                       <span style={{ color: themeColor }}>{counters[k]}</span>
@@ -75,7 +75,7 @@ export default function BridgesCard({ node, themeColor, t }: Props) {
 
             {/* Money — only ever printed next to the word that says whether it moved. */}
             {hasSpend ? (
-              <div className="mb-3 px-2 py-1.5 rounded text-[11px] font-mono"
+              <div className="mb-3 px-2 py-1.5 rounded-sm text-[11px] font-mono"
                    style={{ background: '#00000030', border: `1px solid ${realValue ? '#ff6b3d44' : '#43e65a44'}` }}>
                 <span className="text-white/40">{t('bridges.spend', undefined, 'Billed')}:</span>{' '}
                 <span style={{ color: themeColor }}>{formatUsd(Number(b.spend_usd))}</span>
@@ -105,7 +105,7 @@ export default function BridgesCard({ node, themeColor, t }: Props) {
 
             {/* Why there are no figures. The panel says which of the three states it is in. */}
             {!b.instrumented && (
-              <div className="mb-3 px-3 py-2 rounded text-[11px] font-mono"
+              <div className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono"
                    style={{ background: '#ffcc3310', border: '1px solid #ffcc3333' }}>
                 <div style={{ color: '#ffcc33' }} className="mb-1">
                   ⚠ {t('bridges.not_instrumented', undefined, 'This channel is not instrumented')}
@@ -120,7 +120,7 @@ export default function BridgesCard({ node, themeColor, t }: Props) {
 
             {node.links?.github && (
               <a href={node.links.github} target="_blank" rel="noreferrer"
-                 className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                 className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                  style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}>
                 {t('nodeDetail.community.github')} ↗
               </a>

@@ -43,7 +43,7 @@ export default function AtlasCard({ node, themeColor, mobile, t, sensorQ, setSen
             const sim = node.atlas_live!.sim ?? 0;
             return (
             <div
-              className="mb-3 px-3 py-2 rounded text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
+              className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
               style={{ backgroundColor: themeColor + '10', border: `1px solid ${themeColor}30`, color: themeColor }}
             >
               <span style={{ color: '#3dd6c6' }}>
@@ -78,7 +78,7 @@ export default function AtlasCard({ node, themeColor, mobile, t, sensorQ, setSen
                 onChange={(e) => setSensorQ(e.target.value)}
                 placeholder={t('atlas.search', undefined, 'Search id, layer, place…')}
                 aria-label={t('atlas.search', undefined, 'Search id, layer, place…')}
-                className="w-full mb-2 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-none"
+                className="w-full mb-2 rounded-lg px-2.5 py-1.5 text-[11px] font-mono bg-black/40 text-white/85 outline-hidden"
                 style={{ border: `1px solid ${themeColor}33` }}
               />
               <div className="space-y-1.5 max-h-48 overflow-auto pr-1">
@@ -92,13 +92,13 @@ export default function AtlasCard({ node, themeColor, mobile, t, sensorQ, setSen
                   return (
                   <div
                     key={s.id}
-                    className="px-2.5 py-1.5 rounded flex items-center justify-between gap-2"
+                    className="px-2.5 py-1.5 rounded-sm flex items-center justify-between gap-2"
                     style={{ backgroundColor: themeColor + '0d', border: `1px solid ${themeColor}22` }}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className="shrink-0 text-[9px] font-mono px-1 py-0.5 rounded"
+                          className="shrink-0 text-[9px] font-mono px-1 py-0.5 rounded-sm"
                           style={isLive
                             ? { backgroundColor: '#3dd6c626', color: '#3dd6c6', border: '1px solid #3dd6c666' }
                             : { backgroundColor: '#e8b86d22', color: '#e8b86d', border: '1px solid #e8b86d44' }}
@@ -130,7 +130,7 @@ export default function AtlasCard({ node, themeColor, mobile, t, sensorQ, setSen
                 href={node.atlas_live?.map_url || node.links?.landing}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: '#3dd6c61e', border: '1px solid #3dd6c655', color: '#3dd6c6' }}
               >
                 {t('atlas.full_map', undefined, '🗺 Open full ATLAS map')} ↗
@@ -141,7 +141,7 @@ export default function AtlasCard({ node, themeColor, mobile, t, sensorQ, setSen
                 href={node.links.github}
                 target="_blank"
                 rel="noreferrer"
-                className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                 style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
               >
                 {t('nodeDetail.community.github')} ↗

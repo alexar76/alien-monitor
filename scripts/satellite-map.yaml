@@ -469,7 +469,7 @@ satellites:
 
   - id: oracles
     repo: oracles
-    description: "Verifiable AI-economy oracles — Platon, Chronos, Lattice, Murmuration, Lumen, Colony, and Turing on shared oracle-core."
+    description: "Verifiable AI-economy oracles — 17 signed capabilities (Platon randomness, Chronos VDF, Lumen reputation, Turing, Fourier and more) on shared oracle-core."
     homepage: https://oracles.modelmarket.dev/
     topics:
       - oracles

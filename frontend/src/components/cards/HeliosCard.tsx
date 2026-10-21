@@ -15,7 +15,7 @@ export default function HeliosCard({ node, themeColor, t }: Props) {
             href={node.youtube_url}
             target="_blank"
             rel="noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
           >
             YouTube channel ↗

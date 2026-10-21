@@ -416,7 +416,7 @@ class _Chain:
 class TestTheDepositLandsOnTheChainTheHubReads:
     """The realm's chain and the hub's chain were two different Anvils.
 
-    `my-vps` runs the monitor's universe chain on 127.0.0.1:8545 and the bubble hub's
+    `factory-vps` runs the monitor's universe chain on 127.0.0.1:8545 and the bubble hub's
     chain on 172.17.0.1:8546. Both answer chain id 31337 and both carry the same
     deterministic addresses from the public test mnemonic, so the deposit looked correct
     in every field the buyer could see and existed on neither ledger the hub could read:

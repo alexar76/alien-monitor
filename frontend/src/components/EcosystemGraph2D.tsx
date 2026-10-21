@@ -56,7 +56,7 @@ export default function EcosystemGraph2D({ state, onNodeClick, themeColor }: Pro
   });
 
   return (
-    <div className="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 z-5 overflow-hidden pointer-events-none">
       <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full opacity-35" aria-hidden preserveAspectRatio="none">
         {(state?.links ?? []).slice(0, 24).map((link, i) => {
           const a = nodes.find((n) => n.id === link.source);
@@ -87,7 +87,7 @@ export default function EcosystemGraph2D({ state, onNodeClick, themeColor }: Pro
           <button
             key={node.id}
             type="button"
-            className="absolute pointer-events-auto rounded-full border border-white/20 transition-transform hover:scale-125 focus:outline-none focus:ring-2 focus:ring-white/40"
+            className="absolute pointer-events-auto rounded-full border border-white/20 transition-transform hover:scale-125 focus:outline-hidden focus:ring-2 focus:ring-white/40"
             style={{
               ...p,
               width: size,

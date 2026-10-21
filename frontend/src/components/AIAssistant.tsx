@@ -261,7 +261,7 @@ export default function AIAssistant({
         className={`z-40 glass-panel flex flex-col animate-slide-up min-h-0 overflow-hidden ${
           mobile
             ? // Sit above MobileDock so the composer stays tappable.
-              'fixed inset-x-2 top-[var(--sheet-top)] bottom-[var(--sheet-bottom)] rounded-2xl'
+              'fixed inset-x-2 top-(--sheet-top) bottom-(--sheet-bottom) rounded-2xl'
             : 'absolute right-4 top-32 w-96 max-h-[calc(100vh-220px)]'
         }`}
         style={{
@@ -300,7 +300,7 @@ export default function AIAssistant({
           <select
             value={providerId}
             onChange={(e) => setProviderId(e.target.value)}
-            className="bg-[#0a0a12] border border-white/10 rounded px-2 py-0.5 text-white/80 max-w-[140px]"
+            className="bg-[#0a0a12] border border-white/10 rounded-sm px-2 py-0.5 text-white/80 max-w-[140px]"
             style={{ color: themeColor }}
           >
             {providers.map((p) => (
@@ -313,7 +313,7 @@ export default function AIAssistant({
           <select
             value={modelRole}
             onChange={(e) => setModelRole(e.target.value as 'heavy' | 'light')}
-            className="bg-[#0a0a12] border border-white/10 rounded px-2 py-0.5 text-white/80"
+            className="bg-[#0a0a12] border border-white/10 rounded-sm px-2 py-0.5 text-white/80"
           >
             <option value="heavy">{t('ai.modelHeavy')}</option>
             <option value="light">{t('ai.modelLight')}</option>
@@ -432,7 +432,7 @@ export default function AIAssistant({
               }
             }}
             placeholder={t('ai.placeholder')}
-            className="w-full min-h-[1.25rem] bg-transparent border-none outline-none text-sm text-white/95 placeholder:text-white/45 font-mono pr-10"
+            className="w-full min-h-5 bg-transparent border-none outline-hidden text-sm text-white/95 placeholder:text-white/45 font-mono pr-10"
             disabled={loading}
             enterKeyHint="send"
             autoComplete="off"
@@ -469,7 +469,7 @@ export default function AIAssistant({
           type="button"
           onClick={() => sendMessage(input)}
           disabled={loading || !input.trim()}
-          className="text-xs px-3 py-2.5 rounded-xl font-mono transition-all shrink-0 min-h-[2.75rem]"
+          className="text-xs px-3 py-2.5 rounded-xl font-mono transition-all shrink-0 min-h-11"
           style={{
             backgroundColor: input.trim() ? themeColor + '44' : 'rgba(255,255,255,0.06)',
             border: `1px solid ${input.trim() ? themeColor : '#ffffff44'}`,

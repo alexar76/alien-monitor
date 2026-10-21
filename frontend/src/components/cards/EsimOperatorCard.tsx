@@ -58,12 +58,12 @@ export default function EsimOperatorCard({ node, themeColor, t }: Props) {
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()} data-testid="esim-operator-card">
       <div
-        className="mb-3 px-3 py-2 rounded text-[11px] font-mono leading-relaxed"
+        className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono leading-relaxed"
         style={{ background: '#00000030', border: `1px solid ${accent}33` }}
       >
         <div className="flex items-center gap-2 mb-1">
           <span
-            className="px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider"
+            className="px-1.5 py-0.5 rounded-sm text-[10px] uppercase tracking-wider"
             style={{ color: mode.color, border: `1px solid ${mode.color}66`, background: `${mode.color}14` }}
             data-testid="esim-mode"
           >
@@ -83,7 +83,7 @@ export default function EsimOperatorCard({ node, themeColor, t }: Props) {
 
       <div className="grid grid-cols-3 gap-1.5 mb-2">
         {stats.map((s) => (
-          <div key={s.key} className="px-2 py-1.5 rounded bg-white/5 text-[11px] font-mono">
+          <div key={s.key} className="px-2 py-1.5 rounded-sm bg-white/5 text-[11px] font-mono">
             <div className="text-white/40 text-[10px] leading-tight">{s.label}</div>
             <div style={{ color: accent }} data-testid={`esim-${s.key}`}>{s.value}</div>
           </div>
@@ -102,7 +102,7 @@ export default function EsimOperatorCard({ node, themeColor, t }: Props) {
       </div>
       <div className="flex flex-wrap gap-1 mb-3">
         {CAPABILITIES.map((c) => (
-          <span key={c} className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-mono text-white/60">{c}</span>
+          <span key={c} className="px-1.5 py-0.5 rounded-sm bg-white/5 text-[10px] font-mono text-white/60">{c}</span>
         ))}
       </div>
 
@@ -112,7 +112,7 @@ export default function EsimOperatorCard({ node, themeColor, t }: Props) {
             href={site}
             target="_blank"
             rel="noopener noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
             style={{ backgroundColor: accent + '1e', border: `1px solid ${accent}55`, color: accent }}
             data-testid="esim-site"
           >
@@ -124,7 +124,7 @@ export default function EsimOperatorCard({ node, themeColor, t }: Props) {
             href={kit}
             target="_blank"
             rel="noopener noreferrer"
-            className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110 text-white/70"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110 text-white/70"
             style={{ border: '1px solid #ffffff22' }}
             data-testid="esim-kit"
           >

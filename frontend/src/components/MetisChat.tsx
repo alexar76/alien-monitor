@@ -81,7 +81,7 @@ export default function MetisChat({ themeColor, status }: Props) {
         <select
           value={model}
           onChange={(e) => setModel(e.target.value)}
-          className="bg-[#0a0a12] border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono"
+          className="bg-[#0a0a12] border border-white/10 rounded-sm px-1.5 py-0.5 text-[10px] font-mono"
           style={{ color: themeColor }}
           aria-label={t('metis.chat.route')}
         >
@@ -98,7 +98,7 @@ export default function MetisChat({ themeColor, status }: Props) {
       )}
 
       <div
-        className="rounded p-2 space-y-2 max-h-56 overflow-y-auto"
+        className="rounded-sm p-2 space-y-2 max-h-56 overflow-y-auto"
         style={{ backgroundColor: themeColor + '08', border: `1px solid ${themeColor}18` }}
       >
         {messages.length === 0 && (
@@ -107,7 +107,7 @@ export default function MetisChat({ themeColor, status }: Props) {
         {messages.map((m, i) => (
           <div key={i} className={`text-xs leading-relaxed ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
             <div
-              className="inline-block px-2.5 py-1.5 rounded-lg max-w-[88%] whitespace-pre-wrap break-words"
+              className="inline-block px-2.5 py-1.5 rounded-lg max-w-[88%] whitespace-pre-wrap wrap-break-word"
               style={{
                 backgroundColor: m.role === 'user' ? themeColor + '22' : 'rgba(255,255,255,0.04)',
                 border: `1px solid ${m.role === 'user' ? themeColor + '44' : 'rgba(255,255,255,0.06)'}`,
@@ -136,12 +136,12 @@ export default function MetisChat({ themeColor, status }: Props) {
           onKeyDown={onKeyDown}
           placeholder={t('metis.chat.placeholder')}
           disabled={loading}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none text-xs text-white/90 placeholder:text-white/25 font-mono"
+          className="flex-1 min-w-0 bg-transparent border-none outline-hidden text-xs text-white/90 placeholder:text-white/25 font-mono"
         />
         <button
           onClick={() => send(input)}
           disabled={loading || !input.trim()}
-          className="text-xs px-3 py-1 rounded font-mono transition-all shrink-0"
+          className="text-xs px-3 py-1 rounded-sm font-mono transition-all shrink-0"
           style={{
             backgroundColor: input.trim() ? themeColor + '33' : 'transparent',
             border: `1px solid ${input.trim() ? themeColor : '#ffffff22'}`,

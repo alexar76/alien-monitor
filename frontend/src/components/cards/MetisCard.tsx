@@ -26,7 +26,7 @@ export default function MetisCard({ node, themeColor, mobile, t }: Props) {
                     href={node.links.landing}
                     target="_blank"
                     rel="noreferrer"
-                    className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                    className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                     style={{ backgroundColor: themeColor + '1e', border: `1px solid ${themeColor}55`, color: themeColor }}
                   >
                     {t('metis.landing', undefined, '🌌 Interactive 3D + live cognition')} ↗
@@ -37,7 +37,7 @@ export default function MetisCard({ node, themeColor, mobile, t }: Props) {
                     href={node.links.github}
                     target="_blank"
                     rel="noreferrer"
-                    className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                    className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                     style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
                   >
                     {t('nodeDetail.community.github')} ↗
@@ -48,7 +48,7 @@ export default function MetisCard({ node, themeColor, mobile, t }: Props) {
                     href={node.links.docs}
                     target="_blank"
                     rel="noreferrer"
-                    className="block px-3 py-2 rounded text-xs font-mono transition-colors hover:brightness-110"
+                    className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
                     style={{ backgroundColor: themeColor + '12', border: `1px solid ${themeColor}33`, color: themeColor }}
                   >
                     {t('metis.docs', undefined, 'Documentation')} ↗

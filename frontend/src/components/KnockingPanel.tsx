@@ -35,7 +35,7 @@ export default function KnockingPanel({
       <div
         className={`z-40 glass-panel flex flex-col animate-slide-up min-h-0 ${
           mobile
-            ? 'fixed inset-x-2 top-[var(--sheet-top)] bottom-[var(--sheet-bottom)] rounded-2xl'
+            ? 'fixed inset-x-2 top-(--sheet-top) bottom-(--sheet-bottom) rounded-2xl'
             : 'absolute right-4 top-32 w-96 max-h-[calc(100vh-220px)]'
         }`}
         style={{
@@ -54,7 +54,7 @@ export default function KnockingPanel({
             </span>
             {live && pending.length > 0 && (
               <span
-                className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider"
+                className="text-[9px] font-mono px-1.5 py-0.5 rounded-sm uppercase tracking-wider"
                 style={{ color: amber, backgroundColor: amber + '1a', border: `1px solid ${amber}40` }}
               >
                 {t('knocking.badge', { n: pending.length })}

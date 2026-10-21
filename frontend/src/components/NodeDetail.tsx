@@ -374,7 +374,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
       {/* Group badge */}
       <div className="mb-4">
         <span
-          className="inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase"
+          className="inline-block px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase"
           style={{
             backgroundColor: themeColor + '18',
             color: themeColor,
@@ -384,7 +384,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
           {t(`group.${node.group}`, undefined, node.group)}
         </span>
         <span
-          className="inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-mono uppercase"
+          className="inline-block ml-2 px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase"
           style={{
             backgroundColor: statusColor + '18',
             color: statusColor,
@@ -397,7 +397,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
             "NETWORK · ACTIVE" for a hub that is a name from a list. */}
         {node.simulated && (
           <span
-            className="inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-mono uppercase"
+            className="inline-block ml-2 px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase"
             style={{
               backgroundColor: '#ffcc3318',
               color: '#ffcc33',
@@ -429,7 +429,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
             {t('nodeDetail.hub')}
           </div>
           <div
-            className="px-3 py-2 rounded"
+            className="px-3 py-2 rounded-sm"
             style={{
               backgroundColor: themeColor + '0a',
               border: `1px solid ${themeColor}28`,
@@ -489,7 +489,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
             {node.contracts.entries.map((entry) => (
               <div
                 key={entry.address}
-                className="px-3 py-2 rounded"
+                className="px-3 py-2 rounded-sm"
                 style={{
                   backgroundColor: themeColor + '0a',
                   border: `1px solid ${entry.verified ? themeColor + '38' : '#ffffff14'}`,
@@ -557,7 +557,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
               ? manifestTools.map((tool) => (
                   <div
                     key={tool.capability_id}
-                    className="px-3 py-2 rounded"
+                    className="px-3 py-2 rounded-sm"
                     style={{
                       backgroundColor: themeColor + '0a',
                       border: `1px solid ${themeColor}18`,
@@ -587,7 +587,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
               : fallbackCaps.map((cap) => (
                   <div
                     key={cap}
-                    className="px-3 py-1.5 rounded font-mono text-xs"
+                    className="px-3 py-1.5 rounded-sm font-mono text-xs"
                     style={{
                       backgroundColor: themeColor + '0a',
                       border: `1px solid ${themeColor}18`,
@@ -672,7 +672,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
                   href={child.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded text-xs flex items-center gap-2 transition-colors hover:brightness-110"
+                  className="px-3 py-1.5 rounded-sm text-xs flex items-center gap-2 transition-colors hover:brightness-110"
                   style={{ backgroundColor: themeColor + '08', color: themeColor }}
                 >
                   {childBody}
@@ -680,7 +680,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
               ) : (
                 <div
                   key={child.id}
-                  className="px-3 py-1.5 rounded text-xs flex items-center gap-2"
+                  className="px-3 py-1.5 rounded-sm text-xs flex items-center gap-2"
                   style={{ backgroundColor: themeColor + '08' }}
                 >
                   {childBody}
@@ -802,7 +802,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
             ))}
             {internal && (
               <div
-                className="rounded border px-2.5 py-1.5 font-mono text-[10px] leading-snug break-all"
+                className="rounded-sm border px-2.5 py-1.5 font-mono text-[10px] leading-snug break-all"
                 style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.45)' }}
                 data-testid="node-internal-address"
                 title={internal}
@@ -815,7 +815,7 @@ export default function NodeDetail({ node, onClose, themeColor, mobile = false, 
             )}
             {source && (
               <div
-                className="rounded border px-2.5 py-1.5 font-mono text-[10px] leading-snug break-all"
+                className="rounded-sm border px-2.5 py-1.5 font-mono text-[10px] leading-snug break-all"
                 style={{ borderColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.45)' }}
                 data-testid="node-source-address"
                 title={source}

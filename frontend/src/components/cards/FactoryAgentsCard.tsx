@@ -54,7 +54,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
       <div
-        className="mb-3 px-3 py-2 rounded text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
+        className="mb-3 px-3 py-2 rounded-sm text-[11px] font-mono flex flex-wrap items-center gap-x-3 gap-y-1"
         style={{ backgroundColor: themeColor + '10', border: `1px solid ${themeColor}30`, color: themeColor }}
       >
         <span style={{ color: STATUS_COLOR.live }}>
@@ -77,7 +77,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
           {sdks.map(([sdk, count]) => (
             <span
               key={sdk}
-              className="px-2 py-0.5 rounded text-[10px] font-mono"
+              className="px-2 py-0.5 rounded-sm text-[10px] font-mono"
               style={{ backgroundColor: themeColor + '14', border: `1px solid ${themeColor}30`, color: themeColor }}
               title={t('agents.sdkTitle', undefined, 'SDK the agent integrates through')}
             >
@@ -92,7 +92,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t('agents.search', undefined, 'Search agent, SDK, capability…')}
-          className="w-full mb-2 px-2 py-1 rounded text-[11px] font-mono bg-black/40 outline-none"
+          className="w-full mb-2 px-2 py-1 rounded-sm text-[11px] font-mono bg-black/40 outline-hidden"
           style={{ border: `1px solid ${themeColor}30`, color: themeColor }}
         />
       )}
@@ -108,7 +108,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
           {rows.map((a) => (
             <div
               key={a.agent_id}
-              className="factory-agent-card group px-2 py-2 rounded"
+              className="factory-agent-card group px-2 py-2 rounded-sm"
               style={{ backgroundColor: '#00000040', border: `1px solid ${themeColor}22` }}
             >
               <div className="flex items-start justify-between gap-2">
@@ -136,7 +136,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
                       {a.agent_id}
                     </div>
                     {!a.verified && (
-                      <span className="mt-1 inline-block text-[9px] font-mono px-1 rounded text-amber-300/90 border border-amber-300/30">
+                      <span className="mt-1 inline-block text-[9px] font-mono px-1 rounded-sm text-amber-300/90 border border-amber-300/30">
                         {t('agents.unverified', undefined, 'unverified')}
                       </span>
                     )}
@@ -161,7 +161,7 @@ export default function FactoryAgentsCard({ node, themeColor, mobile, t }: Props
                   {a.capabilities_used!.map((cap) => (
                     <span
                       key={cap}
-                      className="px-1.5 py-0.5 rounded text-[9px] font-mono opacity-80"
+                      className="px-1.5 py-0.5 rounded-sm text-[9px] font-mono opacity-80"
                       style={{ border: `1px solid ${themeColor}25` }}
                     >
                       {cap}
