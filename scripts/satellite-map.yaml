@@ -188,7 +188,7 @@ satellites:
     repo: ai-service-mesh
     description: "AI Service Mesh — autonomous agent discovery, verification, escrow, and payments."
     homepage: https://service-mesh.modelmarket.dev/
-    license: mit
+    license: apache-2.0
     paths:
       - ai-service-mesh
     export_layout:
