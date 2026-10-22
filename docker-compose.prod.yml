@@ -143,7 +143,7 @@ services:
       ALIEN_PUBLIC_DIOSCURI_URL: ${ALIEN_PUBLIC_DIOSCURI_URL:-https://alexar76.github.io/dioscuri/}
       ALIEN_PUBLIC_THEOROS_URL: ${ALIEN_PUBLIC_THEOROS_URL:-https://alexar76.github.io/theoros/}
       ALIEN_DIOSCURI_TELEGRAM_URL: ${ALIEN_DIOSCURI_TELEGRAM_URL:-}
-      ALIEN_DIOSCURI_DISCORD_URL: ${ALIEN_DIOSCURI_DISCORD_URL:-https://discord.gg/aimarket}
+      ALIEN_DIOSCURI_DISCORD_URL: ${ALIEN_DIOSCURI_DISCORD_URL:-https://discord.gg/JjWxGhW9pP}
       # Remote HELIOS broadcast — NOT deployed here; poll GET /health.
       # Override ALIEN_HELIOS_URL in host .env for the private broadcast URL.
       ALIEN_HELIOS_URL: ${ALIEN_HELIOS_URL:-http://127.0.0.1:8791}

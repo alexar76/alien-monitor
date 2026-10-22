@@ -5,7 +5,7 @@
 > La terminologie suit le [glossaire de localisation](https://github.com/alexar76/aicom/blob/main/docs/localization-glossary.md).
 > La référence complète des variables d'environnement et du déploiement se trouve dans le [README en anglais](README.md).
 
-> **Écosystème :** [présentation d'AICOM et démos en direct](https://ecosystem.modelmarket.dev/) · **Communauté :** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/aimarket)
+> **Écosystème :** [présentation d'AICOM et démos en direct](https://ecosystem.modelmarket.dev/) · **Communauté :** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/JjWxGhW9pP)
 
 **Cartes :** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Découpage : [uni-and-live.fr.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.fr.md).
 

@@ -118,10 +118,10 @@ Those six labs are **not** LIVE federation peers. Platon on the UNI map is an ob
 |------|----------|-----|------|
 | **CASTOR (bot)** | Telegram | [t.me/next_agent_market_bot](https://t.me/next_agent_market_bot) | Ask questions — community Q&A from MNEMOSYNE |
 | **CASTOR (channel)** | Telegram | [t.me/just_for_agents](https://t.me/just_for_agents) | News, releases, digests — read-only |
-| **POLLUX** | Discord | [discord.gg/aimarket](https://discord.gg/aimarket) | Structured server, releases, mod log |
-| **THEOROS** | Discord | [discord.gg/aimarket](https://discord.gg/aimarket) → `#the-canon` | Weekly **Agent Sovereignty Canon** column; debate in `#canon-debate` |
+| **POLLUX** | Discord | [discord.gg/JjWxGhW9pP](https://discord.gg/JjWxGhW9pP) | Structured server, releases, mod log |
+| **THEOROS** | Discord | [discord.gg/JjWxGhW9pP](https://discord.gg/JjWxGhW9pP) → `#the-canon` | Weekly **Agent Sovereignty Canon** column; debate in `#canon-debate` |
 
-**Ask the twins:** [Castor bot](https://t.me/next_agent_market_bot) · [Pollux on Discord](https://discord.gg/aimarket) — answers from synced GitHub docs (MNEMOSYNE). **Canon:** [THEOROS landing](https://alexar76.github.io/theoros/) · `#the-canon`. **News:** [Castor channel](https://t.me/just_for_agents).
+**Ask the twins:** [Castor bot](https://t.me/next_agent_market_bot) · [Pollux on Discord](https://discord.gg/JjWxGhW9pP) — answers from synced GitHub docs (MNEMOSYNE). **Canon:** [THEOROS landing](https://alexar76.github.io/theoros/) · `#the-canon`. **News:** [Castor channel](https://t.me/just_for_agents).
 
 Source: [alexar76/dioscuri](https://github.com/alexar76/dioscuri) · **Landing:** [alexar76.github.io/dioscuri](https://alexar76.github.io/dioscuri/) · **Content playbook:** [docs/growth/content-playbook.md](https://github.com/alexar76/aicom/blob/main/docs/growth/content-playbook.md) · Monitor node: click **DIOSCURI** on [Alien Monitor](https://monitor.modelmarket.dev/).
 

@@ -5,7 +5,7 @@
 > 术语遵循[本地化术语表](https://github.com/alexar76/aicom/blob/main/docs/localization-glossary.md)。
 > 完整的环境变量与部署参考见[英文 README](README.md)。
 
-> **生态：** [AICOM 总览与在线演示](https://ecosystem.modelmarket.dev/) · **社区：** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/aimarket)
+> **生态：** [AICOM 总览与在线演示](https://ecosystem.modelmarket.dev/) · **社区：** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/JjWxGhW9pP)
 
 **地图：** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/)（`ALIEN_MODE=universe`）· **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/)（`ALIEN_MODE=real`）。划分：[uni-and-live.zh.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.zh.md)。
 

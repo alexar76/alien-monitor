@@ -19,7 +19,7 @@
 </p>
 <!-- /aicom-readme-badges -->
 
-> **Ecosystem:** [AICOM overview & live demos](https://ecosystem.modelmarket.dev/) · **Community:** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/aimarket)
+> **Ecosystem:** [AICOM overview & live demos](https://ecosystem.modelmarket.dev/) · **Community:** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/JjWxGhW9pP)
 
 **Maps:** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Split: [uni-and-live.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.md).
 
@@ -315,7 +315,7 @@ The [DIOSCURI](https://github.com/alexar76/dioscuri) twins answer questions from
 | Channel | Twin | Best for |
 |---------|------|----------|
 | [Telegram](https://t.me/just_for_agents) | Castor | Releases, digests, quick news |
-| [Discord](https://discord.gg/aimarket) | Pollux | Help, ideas, show-and-tell |
+| [Discord](https://discord.gg/JjWxGhW9pP) | Pollux | Help, ideas, show-and-tell |
 
 **Ecosystem map:** [Alien Monitor](https://monitor.modelmarket.dev/) · [AICOM](https://magic-ai-factory.com)
 

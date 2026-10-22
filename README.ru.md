@@ -5,7 +5,7 @@
 > Терминология следует [глоссарию локализации](https://github.com/alexar76/aicom/blob/main/docs/localization-glossary.md).
 > Полный справочник по переменным окружения и деплою — в [английском README](README.md).
 
-> **Экосистема:** [обзор AICOM и живые демо](https://ecosystem.modelmarket.dev/) · **Сообщество:** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/aimarket)
+> **Экосистема:** [обзор AICOM и живые демо](https://ecosystem.modelmarket.dev/) · **Сообщество:** [Telegram · Castor](https://t.me/just_for_agents) · [Discord · Pollux](https://discord.gg/JjWxGhW9pP)
 
 **Карты:** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Разрез: [uni-and-live.ru.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.ru.md).
 
