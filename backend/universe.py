@@ -172,6 +172,14 @@ class VirtualUniverse(
                 interval = (os.environ.get("ALIEN_ANVIL_STATE_INTERVAL_S", "30") or "0").strip()
                 if interval.isdigit() and int(interval) > 0:
                     anvil_args += ["--state-interval", interval]
+                # Without it Anvil keeps a state per mined block in memory: ~65 MB/min on the UNI
+                # chain at --block-time 2 with no transactions at all, 2 GB in half an hour, and
+                # factory-vps went into a host-wide OOM on 2026-10-22 (14 kills the week before).
+                # The flag must stay bare: on anvil 1.3.1 `--prune-history N` (0, 16, 64 tried) still
+                # grew linearly, the bare form held RSS flat at ~155 MB on the same state. Queries
+                # against old block STATE were already refused; blocks, logs and code are unaffected.
+                if os.environ.get("ALIEN_ANVIL_PRUNE_HISTORY", "1") != "0":
+                    anvil_args.append("--prune-history")
                 if os.environ.get("ALIEN_ANVIL_VERBOSE", "0") != "1":
                     anvil_args.append("--silent")
                 # stderr went to /dev/null, so "failed to parse json file" read as a 90 s

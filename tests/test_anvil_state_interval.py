@@ -47,3 +47,16 @@ def test_state_is_dumped_every_30_seconds_by_default(monkeypatch, tmp_path):
 def test_the_interval_can_be_turned_off(monkeypatch, tmp_path):
     args = _anvil_args(monkeypatch, tmp_path, ALIEN_ANVIL_STATE_INTERVAL_S="0")
     assert "--state-interval" not in args
+
+
+def test_history_is_pruned_with_the_bare_flag(monkeypatch, tmp_path):
+    """A number after --prune-history did not bound memory on anvil 1.3.1; only the bare flag did."""
+    monkeypatch.delenv("ALIEN_ANVIL_PRUNE_HISTORY", raising=False)
+    args = _anvil_args(monkeypatch, tmp_path)
+    i = args.index("--prune-history")
+    assert i == len(args) - 1 or args[i + 1].startswith("--")
+
+
+def test_pruning_can_be_turned_off(monkeypatch, tmp_path):
+    args = _anvil_args(monkeypatch, tmp_path, ALIEN_ANVIL_PRUNE_HISTORY="0")
+    assert "--prune-history" not in args
