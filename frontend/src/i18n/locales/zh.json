@@ -1,5 +1,7 @@
 {
   "app": {
+    "resetView": "初始视图",
+    "resetViewHint": "恢复地图的初始缩放和位置",
     "title": "ALIEN MONITOR",
     "connecting": "正在连接生态系统…",
     "connectFailedAuth": "监控 API 已锁定。请输入操作员令牌以创建安全浏览器会话。",

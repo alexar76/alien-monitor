@@ -1,5 +1,7 @@
 {
   "app": {
+    "resetView": "Reset view",
+    "resetViewHint": "Restore the map’s initial zoom and position",
     "title": "ALIEN MONITOR",
     "connecting": "Connecting to ecosystem…",
     "connectFailedAuth": "Monitor API is locked. Enter the operator token to create a secure browser session.",

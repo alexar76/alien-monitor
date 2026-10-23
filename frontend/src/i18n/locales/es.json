@@ -1,5 +1,7 @@
 {
   "app": {
+    "resetView": "Vista inicial",
+    "resetViewHint": "Restaurar el zoom y la posición iniciales del mapa",
     "title": "ALIEN MONITOR",
     "connecting": "Conectando al ecosistema…",
     "connectFailedAuth": "La API del monitor está bloqueada. Introduzca el token de operador para crear una sesión segura.",

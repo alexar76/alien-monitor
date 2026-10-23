@@ -1,5 +1,7 @@
 {
   "app": {
+    "resetView": "Vue initiale",
+    "resetViewHint": "Rétablir le zoom et la position initiaux de la carte",
     "title": "ALIEN MONITOR",
     "connecting": "Connexion à l'écosystème…",
     "connectFailedAuth": "L'API du moniteur est verrouillée. Saisissez le jeton opérateur pour créer une session sécurisée.",

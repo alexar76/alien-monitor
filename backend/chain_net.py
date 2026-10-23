@@ -44,7 +44,9 @@ Environment contract
 ``AIMARKET_RPC_COOLDOWN``                    seconds a failed endpoint is skipped before re-probe
                                             (default 30).
 ``AIMARKET_RPC_MAX_COOLDOWN``                maximum exponential cooldown for repeatedly failing
-                                            endpoints (default 300).
+                                            endpoints (default 300). A node that refuses (HTTP
+                                            429/403/5xx, a rate or block-range limit) rests at
+                                            least as long as its ``Retry-After`` asks.
 ``AIMARKET_RPC_USER_AGENT``                  User-Agent sent to RPC providers (default
                                             ``aimarket-chain-net/1.0``). Needed because many public
                                             RPCs (Cloudflare-fronted) 403 the default urllib UA.
@@ -180,6 +182,10 @@ _PRESETS: dict[str, NetworkSpec] = {
         rpc_urls=(
             "https://mainnet.base.org",
             "https://base-rpc.publicnode.com",
+            # 2026-10-21, checked from factory-vps and the Independent node: only publicnode and
+            # Tenderly's gateway serve eth_getLogs over the deposit watcher's 500-block window;
+            # mainnet.base.org answers 429, drpc 400, 1rpc caps it at 50 blocks.
+            "https://base.gateway.tenderly.co",
             "https://base.drpc.org",
             "https://1rpc.io/base",
         ),
@@ -472,25 +478,67 @@ def _urllib_transport(url: str, body: dict, timeout: float) -> dict:
 # RPC pool with health-checked failover
 # ═════════════════════════════════════════════════════════════════════════════
 
+#: A JSON-RPC error that means "this node will not serve that request" — a rate limit or a cap
+#: on the block range — rather than "the request is wrong". Another node may serve it, so the
+#: pool moves on instead of handing the caller a refusal one provider chose to make.
+_REFUSAL_RE = re.compile(
+    r"rate.?limit|too many requests|limited to|block range|range (is )?too (large|wide|big)"
+    r"|exceeds? (the )?(max|limit)|-32005\b|capacity",
+    re.IGNORECASE,
+)
+
+
+def _status_code(exc: BaseException) -> Optional[int]:
+    """The HTTP status behind a transport error: urllib's HTTPError (``code``) or httpx's
+    HTTPStatusError (``response.status_code``) — read by shape, so neither is imported."""
+    code = getattr(exc, "code", None)
+    if isinstance(code, int):
+        return code
+    code = getattr(getattr(exc, "response", None), "status_code", None)
+    return code if isinstance(code, int) else None
+
+
+def is_refusal(exc: BaseException) -> bool:
+    """A node that is up but will not answer now: HTTP 429/403/5xx or a limit in its reply.
+    Asking it again at once only spends the quota it is protecting, so it is not retried."""
+    code = _status_code(exc)
+    if code is not None:
+        return code in (403, 429) or code >= 500
+    return bool(_REFUSAL_RE.search(str(exc)))
+
+
+def retry_after_s(exc: BaseException) -> float:
+    """Seconds a refusing node asked us to wait (``Retry-After``), 0 when it did not say."""
+    headers = getattr(exc, "headers", None) or getattr(getattr(exc, "response", None), "headers", None)
+    try:
+        return max(0.0, float((headers or {}).get("retry-after") or (headers or {}).get("Retry-After") or 0))
+    except (TypeError, ValueError, AttributeError):
+        return 0.0
+
+
 class _Endpoint:
-    __slots__ = ("url", "healthy", "cooldown_until", "fails")
+    __slots__ = ("url", "healthy", "cooldown_until", "fails", "last_error")
 
     def __init__(self, url: str) -> None:
         self.url = url
         self.healthy = True            # optimistic; first failure demotes it
         self.cooldown_until = 0.0      # monotonic time before which we skip it
         self.fails = 0
+        self.last_error = ""
 
     def mark_ok(self) -> None:
         self.healthy = True
         self.cooldown_until = 0.0
         self.fails = 0
+        self.last_error = ""
 
-    def mark_fail(self, cooldown: float, max_cooldown: float, now: float) -> None:
+    def mark_fail(self, cooldown: float, max_cooldown: float, now: float, *,
+                  at_least: float = 0.0, error: str = "") -> None:
         self.healthy = False
         self.fails += 1
         delay = min(max_cooldown, cooldown * (2 ** min(self.fails - 1, 10)))
-        self.cooldown_until = now + delay
+        self.cooldown_until = now + max(delay, min(max_cooldown, at_least))
+        self.last_error = error
 
 
 class RpcPool:
@@ -501,6 +549,11 @@ class RpcPool:
     chosen and a recovered default is reclaimed after its cooldown. Transport/RPC failures
     demote an endpoint and fail over to the next; if all are down, raises
     :class:`AllEndpointsDown` (fast — bounded by ``timeout`` per endpoint, no hanging).
+
+    ``rotate=True`` spreads calls instead: each call starts at the next eligible endpoint in
+    turn. That is what a caller with many calls against free public nodes wants (the deposit
+    watcher reads hundreds of log windows to catch up), since per-IP quotas are what such
+    nodes enforce and one preferred node takes every call otherwise.
     """
 
     def __init__(
@@ -513,6 +566,7 @@ class RpcPool:
         cooldown: Optional[float] = None,
         max_cooldown: Optional[float] = None,
         clock: Callable[[], float] = time.monotonic,
+        rotate: bool = False,
     ) -> None:
         # Only http(s) endpoints reach the transport — a hard guard against an env-supplied
         # file:// / gopher:// URL turning a health probe into a local-file/SSRF read.
@@ -539,14 +593,33 @@ class RpcPool:
         )
         self._clock = clock
         self._endpoints = [_Endpoint(u) for u in usable]
+        self._rotate = rotate
+        self._turn = 0
+        self._turn_lock = threading.Lock()
 
     # ── endpoint selection ────────────────────────────────────────────────
     def _candidates(self) -> list[_Endpoint]:
         """Priority order, dropping endpoints still inside their cooldown. If every endpoint
-        is cooling down, return them all (a forced retry beats giving up)."""
+        is cooling down, return them all, soonest-rested first (a forced retry beats giving
+        up). A rotating pool starts each call one eligible endpoint further on."""
         now = self._clock()
         live = [e for e in self._endpoints if e.healthy or now >= e.cooldown_until]
-        return live or list(self._endpoints)
+        if not live:
+            return sorted(self._endpoints, key=lambda e: e.cooldown_until)
+        if self._rotate and len(live) > 1:
+            with self._turn_lock:
+                start = self._turn % len(live)
+                self._turn += 1
+            live = live[start:] + live[:start]
+        return live
+
+    def _demote(self, ep: _Endpoint, exc: BaseException) -> None:
+        ep.mark_fail(self._cooldown, self._max_cooldown, self._clock(),
+                     at_least=retry_after_s(exc), error=" ".join(scrub_secrets(f"{type(exc).__name__}: {exc}").split())[:200])
+
+    def _all_down(self) -> AllEndpointsDown:
+        why = "; ".join(f"{redact_url(e.url)}: {e.last_error or 'resting'}" for e in self._endpoints)
+        return AllEndpointsDown(f"all {len(self._endpoints)} RPC endpoint(s) for {self.spec.id!r} failed — {why}")
 
     # ── core call paths ───────────────────────────────────────────────────
     def run(self, fn: Callable[[str], Any]) -> Any:
@@ -556,23 +629,18 @@ class RpcPool:
         return normally for a valid answer — including legitimate "not found" results, which
         must be modelled as return values, not exceptions, or they would be retried needlessly.
         """
-        last_err: Optional[Exception] = None
         for ep in self._candidates():
             for attempt in range(self._retries + 1):
                 try:
                     result = fn(ep.url)
                 except Exception as exc:  # noqa: BLE001 — any transport error fails over
-                    last_err = exc
-                    if attempt < self._retries:
+                    if attempt < self._retries and not is_refusal(exc):
                         continue
-                    ep.mark_fail(self._cooldown, self._max_cooldown, self._clock())
+                    self._demote(ep, exc)
                     break
                 ep.mark_ok()
                 return result
-        raise AllEndpointsDown(
-            f"all {len(self._endpoints)} RPC endpoint(s) for {self.spec.id!r} failed; "
-            f"last error: {scrub_secrets(str(last_err))}"
-        )
+        raise self._all_down()
 
     def call(self, method: str, params: Optional[list] = None) -> Any:
         """Make a JSON-RPC 2.0 call with failover; returns the ``result`` field.
@@ -593,27 +661,26 @@ class RpcPool:
             return resp.get("result")
 
         # RpcError must propagate (not be treated as transport failure), so run a thin loop
-        # that fails over on transport errors only.
-        last_err: Optional[Exception] = None
+        # that fails over on transport errors only — and on a node's refusal (a rate or range
+        # limit), which says nothing about the request and is not repeated to the same node.
         for ep in self._candidates():
             for attempt in range(self._retries + 1):
                 try:
                     result = _do(ep.url)
-                except RpcError:
+                except RpcError as exc:
+                    if is_refusal(exc):
+                        self._demote(ep, exc)
+                        break
                     ep.mark_ok()  # the node answered; it's healthy, the *request* was bad
                     raise
                 except Exception as exc:  # noqa: BLE001
-                    last_err = exc
-                    if attempt < self._retries:
+                    if attempt < self._retries and not is_refusal(exc):
                         continue
-                    ep.mark_fail(self._cooldown, self._max_cooldown, self._clock())
+                    self._demote(ep, exc)
                     break
                 ep.mark_ok()
                 return result
-        raise AllEndpointsDown(
-            f"all {len(self._endpoints)} RPC endpoint(s) for {self.spec.id!r} failed; "
-            f"last error: {scrub_secrets(str(last_err))}"
-        )
+        raise self._all_down()
 
     # ── health ─────────────────────────────────────────────────────────────
     def _probe_method(self) -> tuple[str, list]:
@@ -672,6 +739,60 @@ class RpcPool:
             "endpoints": endpoints,
         }
 
+    def check(self, *, logs_filter: Optional[dict] = None, max_lag: int = 30) -> list[dict]:
+        """Ask every EVM endpoint, in list order, what its callers will: the chain id, the head
+        and — given ``logs_filter`` (an eth_getLogs filter plus ``window``, its block count) —
+        eth_getLogs over that window ending 20 blocks below the node's head. A node can be up
+        and still refuse that: public Base nodes answered 429, 400 or "limited to 50 blocks".
+
+        One row per endpoint, URL host-only. ``usable``: the right chain, a head within
+        ``max_lag`` blocks of the best one, and the logs answered. Endpoint state is updated
+        as a call would update it, so a check also rests the nodes that refused.
+        """
+        def ask(url: str, method: str, params: list) -> Any:
+            resp = self._transport(url, {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}, self._timeout)
+            if not isinstance(resp, dict):
+                raise ChainNetError(f"malformed RPC reply (expected object, got {type(resp).__name__})")
+            if resp.get("error"):
+                raise RpcError(f"{method}: {resp['error']}")
+            return resp.get("result")
+
+        rows: list[dict] = []
+        for ep in self._endpoints:
+            row: dict[str, Any] = {"url": redact_url(ep.url), "chain_id": None, "head": None, "lag": None,
+                                   "logs": "", "ms": None, "usable": False, "detail": ""}
+            started = time.monotonic()
+            try:
+                row["chain_id"] = int(str(ask(ep.url, "eth_chainId", [])), 16)
+                row["head"] = int(str(ask(ep.url, "eth_blockNumber", [])), 16)
+                if logs_filter is not None:
+                    window = max(1, int(logs_filter.get("window", 500)))
+                    end = max(0, row["head"] - 20)
+                    flt = {k: v for k, v in logs_filter.items() if k != "window"}
+                    flt.update(fromBlock=hex(max(0, end - window + 1)), toBlock=hex(end))
+                    ask(ep.url, "eth_getLogs", [flt])
+                    row["logs"] = "ok"
+            except Exception as exc:  # noqa: BLE001 — every failure is a row, not an abort
+                # One line: httpx appends "For more information check: …" on a line of its own.
+                row["detail"] = " ".join(scrub_secrets(f"{type(exc).__name__}: {exc}").split())[:160]
+                if logs_filter is not None and row["head"] is not None:
+                    row["logs"] = "refused"
+                self._demote(ep, exc)
+            else:
+                ep.mark_ok()
+            row["ms"] = int((time.monotonic() - started) * 1000)
+            rows.append(row)
+        best = max((r["head"] for r in rows if r["head"] is not None), default=None)
+        for r in rows:
+            if r["head"] is not None and best is not None:
+                r["lag"] = best - r["head"]
+            right_chain = r["chain_id"] is not None and (self.spec.chain_id is None or r["chain_id"] == self.spec.chain_id)
+            if r["chain_id"] is not None and not right_chain and not r["detail"]:
+                r["detail"] = f"answers for chain {r['chain_id']}, not {self.spec.chain_id}"
+            r["usable"] = (right_chain and not r["detail"] and r["lag"] is not None and r["lag"] <= max_lag
+                           and (logs_filter is None or r["logs"] == "ok"))
+        return rows
+
 
 _POOL_CACHE: dict[tuple[Any, ...], RpcPool] = {}
 _POOL_CACHE_LOCK = threading.Lock()
@@ -724,3 +845,32 @@ def pool_for(net_id: Optional[str] = None, *, testnet: Optional[bool] = None, **
             )
             _POOL_CACHE[key] = pool
         return pool
+
+
+def pool_for_urls(urls: list[str] | tuple[str, ...], *, chain_id: Optional[int] = None, rotate: bool = True,
+                  timeout: Optional[float] = None, transport: Optional[Transport] = None) -> RpcPool:
+    """A process-persistent rotating pool over an explicit URL list.
+
+    The payment paths build their own lists (``settle.rpc_urls``, ``deposit_verify.rpc_urls_for``)
+    because their overrides are EXCLUSIVE — a bubble's node must never fall through to mainnet —
+    which a network preset with its public backups would not honour. Keyed by the list, chain,
+    rotation, timeout and transport, so the rest a refusing node earned carries over to the
+    next call instead of the next call asking it first again.
+    """
+    clean = tuple(u.strip() for u in urls if u and u.strip())
+    key = ("urls", clean, chain_id, rotate, None if timeout is None else float(timeout), transport)
+    with _POOL_CACHE_LOCK:
+        pool = _POOL_CACHE.get(key)
+        if pool is None:
+            spec = NetworkSpec(id=f"chain-{chain_id}" if chain_id else "rpc-list", kind=EVM,
+                               display_name=f"chain {chain_id}" if chain_id else "RPC list",
+                               chain_id=chain_id, cluster=None, rpc_urls=clean, native_symbol="", explorer_tx="")
+            pool = RpcPool(spec, transport=transport, timeout=timeout, rotate=rotate)
+            _POOL_CACHE[key] = pool
+        return pool
+
+
+def reset_pools() -> None:
+    """Forget every cached pool and the rest its endpoints earned (tests, an operator reload)."""
+    with _POOL_CACHE_LOCK:
+        _POOL_CACHE.clear()

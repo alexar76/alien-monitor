@@ -868,12 +868,16 @@ function focusDistanceForNode(nodeId: string, group: string): number {
 // ---------------------------------------------------------------------------
 // Camera — fly to selection and keep OrbitControls target locked
 // ---------------------------------------------------------------------------
+const INITIAL_CAMERA_POSITION: [number, number, number] = [0, 4, 16];
+
 function CameraRig({
   focusNodeId,
+  resetViewRequest,
   nodePositions,
   nodeGroups,
 }: {
   focusNodeId: string | null;
+  resetViewRequest: number;
   nodePositions: Map<string, THREE.Vector3>;
   nodeGroups: Map<string, string>;
 }) {
@@ -919,6 +923,26 @@ function CameraRig({
       lookTo: target.clone(),
     };
   }, [focusNodeId, camera, nodePositions, nodeGroups]);
+
+  const lastResetRequest = useRef(resetViewRequest);
+  useEffect(() => {
+    if (lastResetRequest.current === resetViewRequest) return;
+    lastResetRequest.current = resetViewRequest;
+    animRef.current.active = false;
+    lastFocusId.current = null;
+
+    // Flush any remaining drag/pan inertia before restoring the opening view.
+    const damping = controls?.enableDamping;
+    if (controls) {
+      controls.enableDamping = false;
+      controls.update();
+      controls.target.set(0, 0, 0);
+    }
+    camera.position.set(...INITIAL_CAMERA_POSITION);
+    camera.lookAt(0, 0, 0);
+    controls?.update();
+    if (controls && damping !== undefined) controls.enableDamping = damping;
+  }, [resetViewRequest, camera, controls]);
 
   useFrame(() => {
     const anim = animRef.current;
@@ -1150,6 +1174,7 @@ function SceneContent({
   themeColor,
   pulseIntensity,
   focusNodeId,
+  resetViewRequest,
   fundingEvents,
   scenario,
   brightScene = false,
@@ -1162,6 +1187,7 @@ function SceneContent({
   themeColor: string;
   pulseIntensity: number;
   focusNodeId: string | null;
+  resetViewRequest: number;
   fundingEvents?: Array<{ id: string; amount: number; token: string; source: string; ts: string }> | null;
   scenario?: { phase: string; phase_progress: number; phase_color: string; tick_count: number; funding_total: number; hub_count: number; buyer_rounds: number } | null;
   /** Brighter lights when Bloom/post-FX is off (safe GPU path). */
@@ -1298,6 +1324,7 @@ function SceneContent({
     <>
       <CameraRig
         focusNodeId={focusNodeId}
+        resetViewRequest={resetViewRequest}
         nodePositions={nodePositions}
         nodeGroups={nodeGroups}
       />
@@ -1561,6 +1588,7 @@ interface Props {
   state: EcosystemState | null;
   onNodeClick: (node: EcoNode) => void;
   focusNodeId?: string | null;
+  resetViewRequest?: number;
   themeColor: string;
   pulseIntensity: number;
   fundingEvents?: Array<{
@@ -1617,6 +1645,7 @@ export default function EcosystemGraph({
   state,
   onNodeClick,
   focusNodeId = null,
+  resetViewRequest = 0,
   themeColor,
   pulseIntensity,
   fundingEvents,
@@ -1650,7 +1679,7 @@ export default function EcosystemGraph({
           toneMappingExposure: 1.35,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
-        camera={{ position: [0, 4, 16], fov: isMobile ? 58 : 52, near: 0.1, far: 120 }}
+        camera={{ position: INITIAL_CAMERA_POSITION, fov: isMobile ? 58 : 52, near: 0.1, far: 120 }}
         // 1.5 rather than 2 on desktop: a Retina screen at dpr 2 renders 2880x1800 for a
         // 1440x900 window — four times the pixels of dpr 1, for a difference almost nobody can
         // see on a dark starfield, and it is paid on every single frame.
@@ -1662,6 +1691,7 @@ export default function EcosystemGraph({
           themeColor={themeColor}
           pulseIntensity={pulseIntensity}
           focusNodeId={focusNodeId}
+          resetViewRequest={resetViewRequest}
           fundingEvents={fundingEvents}
           scenario={scenario}
           brightScene={!enablePostFx}

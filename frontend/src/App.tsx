@@ -631,6 +631,7 @@ export default function App() {
   useKeyboardInset();
   const [mode, setMode] = useState<MonitorMode | null>(null);
   const [selectedNode, setSelectedNode] = useState<EcoNode | null>(null);
+  const [resetViewRequest, setResetViewRequest] = useState(0);
   const [showAI, setShowAI] = useState(false);
   const [showReputation, setShowReputation] = useState(false);
   const [showTx, setShowTx] = useState(true);
@@ -801,6 +802,12 @@ export default function App() {
   const handleCloseNode = useCallback(() => {
     setSelectedNode(null);
     setMobileSheet((s) => (s === 'node' ? 'none' : s));
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setSelectedNode(null);
+    setMobileSheet('none');
+    setResetViewRequest((request) => request + 1);
   }, []);
 
   const handleToggleAI = useCallback(() => {
@@ -1024,6 +1031,7 @@ export default function App() {
             state={mapState}
             onNodeClick={handleNodeClick}
             focusNodeId={selectedNode?.id ?? null}
+            resetViewRequest={resetViewRequest}
             themeColor={themeColor}
             pulseIntensity={pulseIntensity}
             fundingEvents={state?.funding_events ?? null}
@@ -1037,6 +1045,19 @@ export default function App() {
           <EcosystemGraph2D state={graphState} onNodeClick={handleNodeClick} themeColor={themeColor} />
         )}
       </div>
+
+      {mode && !show2dGraph && (
+        <button
+          type="button"
+          onClick={handleResetView}
+          className="absolute right-3 bottom-[calc(8rem+env(safe-area-inset-bottom))] z-20 glass-panel flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 md:right-auto md:left-1/2 md:bottom-4 md:-translate-x-1/2"
+          style={{ color: themeColor, borderColor: themeColor + '44' }}
+          title={t('app.resetViewHint')}
+        >
+          <span aria-hidden="true">⌂</span>
+          {t('app.resetView')}
+        </button>
+      )}
 
       {/* Top metrics bar */}
       <MetricsPanel

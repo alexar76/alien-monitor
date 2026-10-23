@@ -586,6 +586,69 @@ async def _hub_identity(client: httpx.AsyncClient, errors: list[str]) -> dict | 
     return cache["doc"]
 
 
+def _apply_satellite_overlays(nodes: list[dict]) -> None:
+    """The synchronous per-satellite overlays of :func:`fetch_real_metrics`, off the event loop."""
+    from argus_status import apply_argus_graph
+
+    apply_argus_graph(nodes, mode="real")
+
+    from hephaestus_status import apply_hephaestus_graph
+
+    apply_hephaestus_graph(nodes, mode="real")
+
+    from basanos_status import apply_basanos_graph
+
+    apply_basanos_graph(nodes, mode="real")
+    from hestia_status import apply_hestia_graph
+
+    apply_hestia_graph(nodes, mode="real")
+    from dolos_status import apply_dolos_graph
+
+    apply_dolos_graph(nodes, mode="real")
+    from settlement_status import apply_settlement_graph
+    apply_settlement_graph(nodes, mode="real")
+
+    from dioscuri_status import apply_dioscuri_graph
+    from helios_status import apply_helios_graph
+    from metis_status import apply_metis_graph
+    from skopos_status import apply_skopos_graph
+
+    apply_dioscuri_graph(nodes, mode="real")
+    apply_helios_graph(nodes, mode="real")
+    apply_metis_graph(nodes, mode="real")
+    apply_skopos_graph(nodes, mode="real")
+
+    from gaia_status import apply_gaia_graph
+
+    apply_gaia_graph(nodes, mode="real")
+
+    from atlas_status import apply_atlas_graph
+
+    apply_atlas_graph(nodes, mode="real")
+    from factory_agents import apply_factory_agents_graph
+
+    apply_factory_agents_graph(nodes, mode="real")
+
+    from momus_status import apply_momus_graph
+    from warden_status import apply_warden_graph
+    from treasury_status import apply_treasury_graph
+
+    apply_momus_graph(nodes, mode="real")
+    apply_warden_graph(nodes, mode="real")
+    from histor_status import apply_histor_graph
+
+    try:
+        apply_histor_graph(nodes, mode="real")
+    except Exception:  # noqa: BLE001 - one satellite's poller must not take the metrics loop down
+        logger.exception("HISTOR overlay failed")
+    apply_logos_to_nodes(nodes, fetch_logos_status_sync())
+    apply_treasury_graph(nodes, mode="real")
+
+    from bridges_status import apply_bridges_graph
+
+    apply_bridges_graph(nodes, mode="real")
+
+
 async def fetch_real_metrics() -> dict:
     """Gather live metrics from ecosystem HTTP APIs + on-chain RPC."""
     global _real_tick
@@ -784,66 +847,11 @@ async def fetch_real_metrics() -> dict:
         chain=chain_snapshot,
     )
 
-    from argus_status import apply_argus_graph
-
-    apply_argus_graph(nodes, mode="real")
-
-    from hephaestus_status import apply_hephaestus_graph
-
-    apply_hephaestus_graph(nodes, mode="real")
-
-    from basanos_status import apply_basanos_graph
-
-    apply_basanos_graph(nodes, mode="real")
-    from hestia_status import apply_hestia_graph
-
-    apply_hestia_graph(nodes, mode="real")
-    from dolos_status import apply_dolos_graph
-
-    apply_dolos_graph(nodes, mode="real")
-    from settlement_status import apply_settlement_graph
-    apply_settlement_graph(nodes, mode="real")
-
-    from dioscuri_status import apply_dioscuri_graph
-    from helios_status import apply_helios_graph
-    from metis_status import apply_metis_graph
-    from skopos_status import apply_skopos_graph
-
-    apply_dioscuri_graph(nodes, mode="real")
-    apply_helios_graph(nodes, mode="real")
-    apply_metis_graph(nodes, mode="real")
-    apply_skopos_graph(nodes, mode="real")
-
-    from gaia_status import apply_gaia_graph
-
-    apply_gaia_graph(nodes, mode="real")
-
-    from atlas_status import apply_atlas_graph
-
-    apply_atlas_graph(nodes, mode="real")
-    from factory_agents import apply_factory_agents_graph
-
-    apply_factory_agents_graph(nodes, mode="real")
-
-    from momus_status import apply_momus_graph
-    from warden_status import apply_warden_graph
-    from treasury_status import apply_treasury_graph
-
-    apply_momus_graph(nodes, mode="real")
-    apply_warden_graph(nodes, mode="real")
-    from histor_status import apply_histor_graph
-
-    try:
-        # Two HTTP reads to a public host: in a thread, so a slow HISTOR never stalls the loop.
-        await asyncio.to_thread(apply_histor_graph, nodes, mode="real")
-    except Exception:  # noqa: BLE001 - one satellite's poller must not take the metrics loop down
-        logger.exception("HISTOR overlay failed")
-    apply_logos_to_nodes(nodes, fetch_logos_status_sync())
-    apply_treasury_graph(nodes, mode="real")
-
-    from bridges_status import apply_bridges_graph
-
-    apply_bridges_graph(nodes, mode="real")
+    # Each satellite overlay polls its service with a blocking HTTP client (timeouts of 4-6 s),
+    # and they ran one after another on the event loop: while they waited the monitor answered
+    # nothing, /api/health included (p95 4.3 s at 20 users in the 2026-10-23 load test). One
+    # worker thread runs them now, in the same order, on the same list.
+    await asyncio.to_thread(_apply_satellite_overlays, nodes)
 
     try:
         await enrich_competing_lab_nodes(nodes, primary_hub_url=HUB_URL)
