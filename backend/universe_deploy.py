@@ -12,10 +12,19 @@ import subprocess
 from pathlib import Path
 
 from universe_entities import ANVIL_DEPLOYER_KEY, resolve_acex_evm_dir, resolve_evm_contracts_dir, resolve_lottery_contracts_dir, resolve_solana_contracts_dir
+from evm_dev_key_safety import local_dev_rpc, require_local_dev_chain
 
 
 class ContractDeployMixin:
     """Forge and Solana deployments of the universe's contracts."""
+
+    def _assert_demo_deployment_rpc(self) -> None:
+        if not local_dev_rpc(self.evm_rpc):
+            raise RuntimeError("Universe's public deployer key requires a local/private development RPC")
+        from web3 import Web3
+
+        w3 = Web3(Web3.HTTPProvider(self.evm_rpc, request_kwargs={"timeout": 5, "allow_redirects": False}))
+        require_local_dev_chain(w3, self.evm_rpc)
 
     def _deploy_usdt_forge(self, deployer: str):
         addr = self._forge_run("script/DeployFakeUSDT.s.sol", deployer, {})
@@ -36,6 +45,7 @@ class ContractDeployMixin:
             self._last_deploy_error = f"contracts dir missing: {evm_dir}"
             print(f"[Universe] {self._last_deploy_error}")
             return None
+        self._assert_demo_deployment_rpc()
         env = os.environ.copy()
         env["PRIVATE_KEY"] = ANVIL_DEPLOYER_KEY
         env["INITIAL_HUBS"] = deployer
@@ -51,7 +61,7 @@ class ContractDeployMixin:
         env.update(extra_env)
         try:
             proc = subprocess.run(
-                ["forge", "script", script, "--rpc-url", self.evm_rpc, "--broadcast", "--slow"],
+                ["forge", "script", script, "--rpc-url", self.evm_rpc, "--chain-id", "31337", "--broadcast", "--slow"],
                 cwd=str(evm_dir),
                 env=env,
                 capture_output=True,
@@ -207,13 +217,14 @@ class ContractDeployMixin:
         if not shutil.which("forge"):
             self._last_deploy_error = "forge not found on PATH"
             return
+        self._assert_demo_deployment_rpc()
         env = os.environ.copy()
         env["PRIVATE_KEY"] = ANVIL_DEPLOYER_KEY
         env["DEPLOYER_PRIVATE_KEY"] = ANVIL_DEPLOYER_KEY
         env["USDC_ADDRESS"] = self.evm_usdt_address
         try:
             proc = subprocess.run(
-                ["forge", "script", "script/DeployACEX.s.sol:DeployACEX", "--rpc-url", self.evm_rpc, "--broadcast", "--slow"],
+                ["forge", "script", "script/DeployACEX.s.sol:DeployACEX", "--rpc-url", self.evm_rpc, "--chain-id", "31337", "--broadcast", "--slow"],
                 cwd=str(acex_dir),
                 env=env,
                 capture_output=True,
@@ -257,12 +268,13 @@ class ContractDeployMixin:
         if not project_dir.is_dir():
             self._last_deploy_error = f"project dir missing: {project_dir}"
             return None
+        self._assert_demo_deployment_rpc()
         env = os.environ.copy()
         env["PRIVATE_KEY"] = ANVIL_DEPLOYER_KEY
         env.update(extra_env)
         try:
             proc = subprocess.run(
-                ["forge", "script", script, "--rpc-url", self.evm_rpc, "--broadcast", "--slow"],
+                ["forge", "script", script, "--rpc-url", self.evm_rpc, "--chain-id", "31337", "--broadcast", "--slow"],
                 cwd=str(project_dir),
                 env=env,
                 capture_output=True,

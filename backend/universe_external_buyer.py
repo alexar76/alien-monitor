@@ -231,6 +231,8 @@ class ExternalAIBuyer:
         self._unspent: dict[str, Any] = {}
         self._opened_deposit_usd = 0.0
         self._settle_w3 = None
+        self._settle_rpc = ""
+        self._settle_signing_context = None
         self._settle_accounts: list[str] = []
         self._open_retry_at = 0.0
 
@@ -563,19 +565,41 @@ class ExternalAIBuyer:
         Unset, nothing changes and the realm's own chain is used.
         """
         rpc = (os.environ.get("ALIEN_UNIVERSE_BUYER_RPC") or "").strip().rstrip("/")
+        from evm_dev_key_safety import local_dev_rpc, require_local_dev_chain
+
+        self._settle_signing_context = None
         realm_token = str(getattr(vu, "evm_usdt_address", "") or "")
         if not rpc:
-            return getattr(vu, "_w3", None), realm_token, list(getattr(vu, "_eth_accounts", None) or []), ""
+            w3 = getattr(vu, "_w3", None)
+            if w3 is not None:
+                rpc = str(getattr(vu, "evm_rpc", "") or getattr(getattr(w3, "provider", None), "endpoint_uri", ""))
+                try:
+                    require_local_dev_chain(w3, rpc)
+                except Exception as exc:
+                    return None, realm_token, [], f"unsafe settlement chain ({type(exc).__name__})"
+                self._settle_signing_context = (w3, rpc)
+            return w3, realm_token, list(getattr(vu, "_eth_accounts", None) or []), ""
         token = (os.environ.get("ALIEN_UNIVERSE_BUYER_TOKEN") or realm_token).strip()
+        if not local_dev_rpc(rpc):
+            return None, token, [], "unsafe settlement RPC: public development wallet requires a local/private chain"
+        if self._settle_rpc and self._settle_rpc != rpc:
+            self._settle_w3 = None
         if self._settle_w3 is None:
             try:
                 from web3 import Web3
 
-                self._settle_w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 10}))
+                self._settle_w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 10, "allow_redirects": False}))
                 self._settle_accounts = [str(a) for a in self._settle_w3.eth.accounts]
             except Exception as exc:
                 self._settle_w3 = None
-                return None, token, [], f"settlement chain {rpc} is unreachable ({type(exc).__name__}: {exc})"
+                return None, token, [], f"settlement chain is unreachable ({type(exc).__name__})"
+        try:
+            require_local_dev_chain(self._settle_w3, rpc)
+        except Exception as exc:
+            self._settle_w3 = None
+            return None, token, [], f"unsafe settlement chain ({type(exc).__name__})"
+        self._settle_rpc = rpc
+        self._settle_signing_context = (self._settle_w3, rpc)
         return self._settle_w3, token, self._settle_accounts, ""
 
     def _payment_recipient(self, vu: Any, item: dict | None = None) -> str:
@@ -681,9 +705,9 @@ class ExternalAIBuyer:
         customer on Base. Returns ("", reason) when this realm has no chain to pay on.
         """
         w3, token_address, accounts, why = self._settlement_chain(vu)
-        recipient = self._payment_recipient(vu, item)
         if why:
             return "", why
+        recipient = self._payment_recipient(vu, item)
         if w3 is None or not w3.is_connected():
             return "", "this realm has no chain connection to pay on"
         if not token_address or not recipient:
@@ -758,6 +782,14 @@ class ExternalAIBuyer:
         """
         from eth_account import Account
         from eth_account.messages import encode_defunct
+        from evm_dev_key_safety import require_local_dev_chain
+
+        context = self._settle_signing_context
+        if context is None:
+            raise RuntimeError("Payer proof requires a verified local development settlement chain")
+        w3, rpc = context
+        current_rpc = (os.environ.get("ALIEN_UNIVERSE_BUYER_RPC") or rpc).strip().rstrip("/")
+        require_local_dev_chain(w3, current_rpc)
 
         signed = Account.sign_message(
             encode_defunct(text=challenge), private_key=UNI_BUYER_KEY

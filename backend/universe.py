@@ -10,7 +10,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import re
 import shutil
 import stat
 import subprocess
@@ -276,13 +275,23 @@ class VirtualUniverse(
         return False
 
     def _init_web3(self):
+        from evm_dev_key_safety import local_dev_rpc, require_local_dev_chain
+
+        if not local_dev_rpc(self.evm_rpc):
+            self._w3 = None
+            raise RuntimeError("Universe requires a local/private development RPC")
         try:
             from web3 import Web3
         except ImportError:
             print("[Universe] web3.py missing — pip install web3")
             return
-        self._w3 = Web3(Web3.HTTPProvider(self.evm_rpc))
+        self._w3 = Web3(Web3.HTTPProvider(self.evm_rpc, request_kwargs={"timeout": 5, "allow_redirects": False}))
         if self._w3.is_connected():
+            try:
+                require_local_dev_chain(self._w3, self.evm_rpc)
+            except Exception:
+                self._w3 = None
+                raise
             self._eth_accounts = self._w3.eth.accounts
             self.payment_recipient = self._eth_accounts[0]
             print(f"[Universe] EVM connected — chain {self._w3.eth.chain_id}")

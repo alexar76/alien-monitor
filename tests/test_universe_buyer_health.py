@@ -176,6 +176,7 @@ class TestRealDeposit:
         from eth_account.messages import encode_defunct
 
         buyer_obj = ueb.ExternalAIBuyer(hub_url="http://127.0.0.1:9183")
+        buyer_obj._settle_signing_context = (_Chain([]), "http://127.0.0.1:8545")
         challenge = (
             "AIMarket-Payer-Proof/v1\npurpose:channel-open\nchain:base\n"
             "tx:0x" + "ab" * 32 + "\npayer:0x" + "cd" * 20 + "\namount_cents:1000"
@@ -406,7 +407,8 @@ class _Chain:
     """The smallest fake chain `_settlement_chain` can hand back."""
 
     def __init__(self, accounts):
-        self.eth = type("eth", (), {"accounts": accounts})()
+        self.eth = type("eth", (), {"accounts": accounts, "chain_id": 31337})()
+        self.provider = type("provider", (), {"endpoint_uri": "http://127.0.0.1:8545"})()
 
     @staticmethod
     def is_connected():
@@ -470,7 +472,7 @@ class TestTheDepositLandsOnTheChainTheHubReads:
         monkeypatch.setitem(_sys.modules, "web3", fake)
         tx, reason = buyer._deposit_onchain(vu, 1.0, {"capability_id": "x@v1"})
         assert tx == ""
-        assert "127.0.0.1:1" in reason and "unreachable" in reason
+        assert "unreachable" in reason and "OSError" in reason
 
 
 class TestRefusalsDoNotBurnTheHubsRateLimit:
@@ -551,8 +553,6 @@ class TestARefusedOpenDoesNotStrandTheDeposit:
             def json(self):
                 return ({"channel": {"channel_id": "ch-1"}, "channel_secret": "s"}
                         if self.status_code == 200 else {"error": "rate limit exceeded"})
-
-        import contextlib
 
         class _Client:
             def __init__(self, *a, **k):
