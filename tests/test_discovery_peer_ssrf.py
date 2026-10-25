@@ -3,7 +3,7 @@
 `_apply_discovery` calls `discover_cached_sync(hub_url, allow_private=True)` so the UNI sim
 can reach hubs it spawned on loopback. But that flag is threaded into `DiscoveryConfig` and
 then into EVERY peer fetch, and with it set `url_is_safe` returns True for any http(s) URL
-WITHOUT resolving it while `_pin_http_target` returns immediately without re-vetting. So the
+WITHOUT resolving it while `_pin_target` returns immediately without re-vetting. So the
 DNS-rebinding defence and the private-range check were both off for URLs a third party
 supplies.
 
@@ -67,3 +67,29 @@ class TestAPeerUrlIsNeverTrustedBlindly:
         assert "allow_private=True" in src, (
             "the trusted-hub fetch lost its allowance; a locally spawned hub is unreachable"
         )
+
+
+class TestAPeerUrlIsFetchedFromTheAddressThatPassed:
+    """HTTPS kept the hostname, so httpx resolved a peer's name again after the check."""
+
+    def test_https_is_pinned_with_the_name_in_host_and_sni(self, monkeypatch):
+        import socket
+
+        import hub_discovery
+
+        monkeypatch.setattr(socket, "getaddrinfo",
+                            lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 0))])
+        url, headers, extensions = hub_discovery._pin_target(
+            "https://peer.example:9083/.well-known/ai-market.json", allow_private=False)
+        assert url == "https://93.184.216.34:9083/.well-known/ai-market.json"
+        assert headers == {"Host": "peer.example:9083"}
+        assert extensions == {"sni_hostname": "peer.example"}
+
+    def test_a_peer_name_that_now_answers_private_is_not_fetched(self, monkeypatch):
+        import socket
+
+        import hub_discovery
+
+        monkeypatch.setattr(socket, "getaddrinfo",
+                            lambda *a, **k: [(2, 1, 6, "", ("10.0.0.5", 0))])
+        assert hub_discovery._pin_target("https://peer.example/x", allow_private=False) is None

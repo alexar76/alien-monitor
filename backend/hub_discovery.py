@@ -175,7 +175,7 @@ def url_is_safe(url: str, *, allow_private: bool | str = False) -> bool:
 
     ``True`` used to be what every peer fetch got, because one flag on
     ``DiscoveryConfig`` covered both the trusted hub and everything the hub told us about.
-    With it set, this function returned True unresolved and ``_pin_http_target`` skipped the
+    With it set, this function returned True unresolved and ``_pin_target`` skipped the
     re-vet — so both the private-range check and the DNS-rebinding defence were off for
     addresses a third party chose. A peer entry needs no operator: open federation
     auto-admits, and the hub republishes the announcer's own well_known_url verbatim.
@@ -235,20 +235,25 @@ def _health_url(base_url: str, *, is_hub: bool) -> str:
     return f"{base_url.rstrip('/')}{path}"
 
 
-def _pin_http_target(url: str, *, allow_private: bool) -> tuple[str, dict[str, str]] | None:
-    """For plain-HTTP, pin the connection to a freshly re-vetted IP (Host header
-    preserved) to defeat DNS rebinding between the guard check and httpx's own
-    resolution. Returns (request_url, extra_headers) or None if unsafe.
+def _pin_target(
+    url: str, *, allow_private: bool | str,
+) -> tuple[str, dict[str, str], dict[str, str]] | None:
+    """Pin the connection to a freshly re-vetted IP to defeat DNS rebinding between the
+    guard check and httpx's own resolution. Returns (request_url, extra_headers,
+    extensions) or None if unsafe.
 
-    HTTPS keeps the hostname (IP-pinning would break TLS SNI/cert validation);
-    the pre-flight guard + the operator-trusted hub relay bound that residual.
+    HTTPS used to keep the hostname, on the belief that pinning an IP breaks TLS SNI and
+    certificate validation; it does not: ``sni_hostname`` sends the name in the handshake
+    and the certificate is verified against it. Peer URLs are chosen by the peer, so the
+    HTTPS path was the rebinding window this function exists to close (the class of Vulnetix
+    GCVE-110-PYPI-2026-021946 in signal-hunt's peer probe).
     """
     parsed = urlparse(url)
     host = parsed.hostname or ""
     # `is True` on purpose: the "loopback" allowance still gets resolved and pinned below,
     # because permitting loopback is not the same as declining to look.
-    if allow_private is True or parsed.scheme != "http" or not host:
-        return url, {}
+    if allow_private is True or parsed.scheme not in ("http", "https") or not host:
+        return url, {}, {}
     ips = _resolved_ips(host)
     if not ips:
         return None
@@ -259,11 +264,19 @@ def _pin_http_target(url: str, *, allow_private: bool) -> tuple[str, dict[str, s
             return None
     chosen = ips[0]
     if str(chosen) == host:
-        return url, {}
+        return url, {}, {}
+    try:
+        # Host and SNI carry the ASCII form; httpx cannot put a Unicode name in a header.
+        ascii_host = host.encode("idna").decode("ascii")
+    except UnicodeError:
+        return None
     netloc = f"[{chosen}]" if chosen.version == 6 else str(chosen)
+    host_header = ascii_host
     if parsed.port:
         netloc = f"{netloc}:{parsed.port}"
-    return parsed._replace(netloc=netloc).geturl(), {"Host": parsed.netloc}
+        host_header = f"{ascii_host}:{parsed.port}"
+    extensions = {"sni_hostname": ascii_host} if parsed.scheme == "https" else {}
+    return parsed._replace(netloc=netloc).geturl(), {"Host": host_header}, extensions
 
 
 # ── numeric coercion ────────────────────────────────────────────────
@@ -363,14 +376,15 @@ async def _get_json(
     """Fetch JSON with SSRF guard, IP-pinning, hard deadline, size cap, JSON-only."""
     if not url_is_safe(url, allow_private=allow_private):
         return None
-    pinned = _pin_http_target(url, allow_private=allow_private)
+    pinned = _pin_target(url, allow_private=allow_private)
     if pinned is None:
         return None
-    req_url, extra_headers = pinned
+    req_url, extra_headers, extensions = pinned
     headers = {"User-Agent": USER_AGENT, **extra_headers}
 
     async def _do() -> Any | None:
-        async with client.stream("GET", req_url, follow_redirects=False, headers=headers) as resp:
+        async with client.stream("GET", req_url, follow_redirects=False, headers=headers,
+                                 extensions=extensions or None) as resp:
             if resp.status_code != 200:
                 return None
             # JSON-only — default-closed: a peer that omits Content-Type is rejected.

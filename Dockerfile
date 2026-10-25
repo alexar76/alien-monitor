@@ -1,9 +1,10 @@
+# Node security baseline: 22.23.4 (2026-10-21 security release).
 # Alien Monitor — production image with UNI mode (embedded Anvil + Foundry deploy).
 #
 # Build from monorepo root (required for contracts/evm):
 #   docker compose -f alien-monitor/docker-compose.prod.yml build
 #
-FROM node:20-alpine AS frontend
+FROM node:22.23.4-alpine AS frontend
 WORKDIR /build/frontend
 COPY alien-monitor/frontend/package.json alien-monitor/frontend/package-lock.json ./
 RUN npm install --silent
