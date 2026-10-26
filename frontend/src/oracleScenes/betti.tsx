@@ -344,7 +344,7 @@ function Barcode({ bars, eps }: { bars: Bar[]; eps: React.MutableRefObject<numbe
       {/* sweep playhead — a vertical tick marking the current ε */}
       <SweepTick eps={eps} X0={X0} W={W} Y0={Y0} />
       {bars.map((b, k) => (
-        <mesh key={k} ref={(m) => (refs.current[k] = m)} position={[0, Y0 + b.row * ROW_H, 0]}>
+        <mesh key={k} ref={(m) => { refs.current[k] = m; }} position={[0, Y0 + b.row * ROW_H, 0]}>
           <boxGeometry args={[1, 0.12, 0.05]} />
           <meshBasicMaterial color={colorFor(b.dim)} transparent opacity={0} toneMapped={false} blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>

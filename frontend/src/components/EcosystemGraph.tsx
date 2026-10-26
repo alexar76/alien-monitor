@@ -191,12 +191,7 @@ function WormholeTunnel({
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          array={positions}
-          count={particleCount}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.06}
@@ -250,7 +245,7 @@ function NebulaCloud({
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.08}
@@ -302,7 +297,7 @@ function AsteroidBelt({
   return (
     <points ref={pointsRef} rotation={[tilt, 0, 0]}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.04}
@@ -469,7 +464,7 @@ function CosmicDust({ color, count = 500 }: { color: string; count?: number }) {
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.03}
@@ -744,7 +739,7 @@ function ConstellationLines({
   return (
     <lineSegments key={count}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={vertices} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
       </bufferGeometry>
       <lineBasicMaterial color={themeColor} transparent opacity={0.08} depthWrite={false} />
     </lineSegments>
@@ -1056,8 +1051,8 @@ function FarFieldNodes({
       }}
     >
       <bufferGeometry key={`${chart.epoch}:${count}`}>
-        <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
-        <bufferAttribute attach="attributes-color" array={colors} count={count} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial
         // A star, not a tile. three draws a Point as a square quad unless something masks
@@ -1514,7 +1509,7 @@ function FundingStream({
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={particleCount} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
         size={0.08}

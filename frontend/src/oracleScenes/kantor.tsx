@@ -364,7 +364,7 @@ export default function Scene() {
       {data.filIdx.map((mi, k) => (
         <Line
           key={mi}
-          ref={(r) => (lineRefs.current[k] = r)}
+          ref={(r) => { lineRefs.current[k] = r; }}
           points={data.filInit[k]}
           vertexColors={data.filColors[k]}
           lineWidth={1.6}

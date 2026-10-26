@@ -187,7 +187,7 @@ function useTabVisible(): boolean {
 /** True while the box is on screen. Without IntersectionObserver we assume yes
  *  (the panel only mounts this when it is open) — the tab-hidden and stale
  *  brakes still apply. */
-function useInView(ref: RefObject<Element>): boolean {
+function useInView(ref: RefObject<Element | null>): boolean {
   const [inView, setInView] = useState(typeof IntersectionObserver === 'undefined');
   useEffect(() => {
     const el = ref.current;
@@ -204,7 +204,7 @@ function useInView(ref: RefObject<Element>): boolean {
 
 /** A crashed iframe must never take the panel down — the CSS poster stays up. */
 function useIframeEmbed(
-  boxRef: RefObject<HTMLDivElement>,
+  boxRef: RefObject<HTMLDivElement | null>,
   drive: {
     alert: number;
     scanning: boolean;

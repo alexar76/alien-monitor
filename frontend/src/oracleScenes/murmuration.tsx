@@ -386,7 +386,7 @@ export default function Scene() {
           attenuation={(w) => w * w}
         >
           <mesh
-            ref={(m) => (trailRefs.current[k] = m)}
+            ref={(m) => { trailRefs.current[k] = m; }}
             position={boids[bi].home}
           >
             <sphereGeometry args={[0.12, 8, 8]} />
