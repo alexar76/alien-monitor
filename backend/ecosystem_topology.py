@@ -4,6 +4,8 @@ overlay.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from factory_products import factory_public_url, mesh_public_url
 from hub_affiliation import hub_public_url
 from lottery_layers import lottery_financial_links, lottery_node_spec
@@ -34,6 +36,9 @@ from warden_layers import warden_node_spec, warden_topology_links
 from histor_layers import histor_node_spec, histor_topology_links
 from logos_layers import logos_node_spec, logos_topology_links
 from live_lottery_feed import live_lottery_fresh
+
+if TYPE_CHECKING:
+    from main import EcosystemSimulator
 
 
 # ---------------------------------------------------------------------------
