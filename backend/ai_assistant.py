@@ -14,6 +14,8 @@ from typing import Any
 import httpx
 import yaml
 
+from product_display import node_display_description, node_display_label
+
 _MONITOR_ROOT = Path(__file__).resolve().parent.parent
 _AICOM_ROOT = _MONITOR_ROOT.parent
 
@@ -278,7 +280,7 @@ def build_live_context(state: dict | None, mode: str, selected_node_id: str | No
             continue
         entry: dict[str, Any] = {
             "id": n.get("id"),
-            "label": n.get("label"),
+            "label": node_display_label(n),
             "group": n.get("group"),
             "status": n.get("status"),
             "metrics": n.get("metrics") or {},
@@ -295,11 +297,11 @@ def build_live_context(state: dict | None, mode: str, selected_node_id: str | No
         if n.get("description") and (
             (selected_node_id and n.get("id") == selected_node_id) or n.get("galaxy")
         ):
-            entry["description"] = n.get("description")
+            entry["description"] = node_display_description(n)
         if selected_node_id and n.get("id") == selected_node_id:
             entry["selected"] = True
             if n.get("description"):
-                entry["description"] = n.get("description")
+                entry["description"] = node_display_description(n)
             if n.get("children"):
                 entry["children"] = n.get("children")
         nodes_out.append(entry)

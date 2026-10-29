@@ -59,12 +59,11 @@ class TestCentralSourcesDoNotDrift:
 
     @pytest.mark.skipif(not _IN_MONOREPO, reason="monorepo-only drift check")
     def test_satellite_map_copy_matches_the_central_one(self):
-        """The copy is the central map minus what GitHub does not have.
+        """The copy includes published satellites and explicitly visible local services.
 
-        It is NOT every id: a satellite marked `github_published: false` is deliberately kept
-        out of every knowledge base (telling an agent about a component it cannot open is worse
-        than silence — it then hands a stranger a dead link), and this copy is the one the
-        assistant reads inside the container. Hand-copying let it fall three satellites behind,
+        An unpublished repository is excluded unless `knowledge_visible: true` explicitly
+        keeps its local/runtime role known. Such a row must not invent a GitHub link.
+        This copy is the one the assistant reads inside the container. Hand-copying let it fall three satellites behind,
         so scripts/sync_knowledge_base.py owns the transform and this asserts its current output.
         """
         central = ROOT / "scripts" / "satellite-map.yaml"
@@ -82,22 +81,20 @@ class TestCentralSourcesDoNotDrift:
         )
 
     @pytest.mark.skipif(not _IN_MONOREPO, reason="monorepo-only drift check")
-    def test_the_copy_carries_every_published_satellite_and_no_unpublished_one(self):
-        """The rule, asserted in both directions — a published satellite missing from the copy
-        is a component the in-container assistant will deny exists (that is how a user asking
-        «где логос» got told it does not exist), and an unpublished one present in it is a dead
-        GitHub link handed to a stranger."""
+    def test_the_copy_carries_every_visible_satellite_and_no_excluded_one(self):
+        """Explicitly visible local services stay known without claiming publication."""
         central_doc = yaml.safe_load(
             (ROOT / "scripts" / "satellite-map.yaml").read_text(encoding="utf-8")
         )
-        unpublished = {
+        excluded = {
             s["id"] for s in central_doc.get("satellites") or []
-            if isinstance(s, dict) and s.get("github_published") is False and s.get("id")
+            if isinstance(s, dict) and s.get("github_published") is False
+            and s.get("knowledge_visible") is not True and s.get("id")
         }
         copied = _map_ids(MONITOR / "scripts" / "satellite-map.yaml")
-        published = _map_ids(ROOT / "scripts" / "satellite-map.yaml") - unpublished
-        assert published - copied == set(), f"published but not copied: {sorted(published - copied)}"
-        assert copied & unpublished == set(), f"unpublished but copied: {sorted(copied & unpublished)}"
+        visible = _map_ids(ROOT / "scripts" / "satellite-map.yaml") - excluded
+        assert visible - copied == set(), f"visible but not copied: {sorted(visible - copied)}"
+        assert copied & excluded == set(), f"excluded but copied: {sorted(copied & excluded)}"
 
     @pytest.mark.skipif(not _IN_MONOREPO, reason="monorepo-only drift check")
     def test_knowledge_base_copy_matches_the_central_one(self):

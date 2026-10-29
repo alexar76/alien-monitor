@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from product_display import current_product_label, is_symmartys_node, symmartys_question
+
 _BACKEND_ROOT = Path(__file__).resolve().parent
 _MONITOR_ROOT = _BACKEND_ROOT.parent
 
@@ -65,7 +67,9 @@ def build_ecosystem_registry_context(*, max_items: int = 250) -> str:
         home = str(sat.get("homepage") or "").strip()
         optional = sat.get("optional") is True
         tag = " (profile README)" if optional else ""
-        line = f"- **{sid}** → github.com/{org}/{repo}{tag}: {desc}"
+        location = (f"github.com/{org}/{repo}" if sat.get("github_published") is not False
+                    else f"local monorepo source: {repo}/ (repository not published)")
+        line = f"- **{sid}** → {location}{tag}: {desc}"
         if home:
             line += f" · {home}"
         lines.append(line)
@@ -193,6 +197,8 @@ def build_live_federation_context(*, timeout_s: float = 4.0) -> str:
         src = str(t.get("source_hub") or "local")
         if src == "local":
             pid = str(t.get("product_id") or "?")
+            if pid in {"emporion", "symmartys"}:
+                pid = "SYMMARTYS"
             local_products[pid] = local_products.get(pid, 0) + 1
         else:
             by_peer[src] = by_peer.get(src, 0) + 1
@@ -216,8 +222,11 @@ def build_live_federation_context(*, timeout_s: float = 4.0) -> str:
             if not isinstance(p, dict):
                 continue
             url = str(p.get("url") or "")
+            name = str(p.get("name") or url)
+            if is_symmartys_node({"id": p.get("id"), "url": url}):
+                name = current_product_label(name)
             lines.append("- %s — %s (%s capabilities indexed here)"
-                         % (str(p.get("name") or url)[:80], url, by_peer.get(url, 0)))
+                         % (name[:80], url, by_peer.get(url, 0)))
 
     text = "\n".join(lines)
     _live_cache.update({"at": now, "text": text})
@@ -234,7 +243,7 @@ def live_component_answer(question: str) -> str:
 
     Returns "" when nothing matches — the caller keeps its own wording for "I don't know".
     """
-    q = (question or "").lower()
+    q = symmartys_question(question or "").lower()
     if len(q) < 3:
         return ""
     ctx = build_live_federation_context()

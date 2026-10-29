@@ -29,6 +29,7 @@ import { pendingHubsFrom } from './lib/pendingHubs';
 import { canExpand, neighborhoodNodes, newLazyNodes } from './lib/federationLayout';
 import { useWindowedMap } from './hooks/useWindowedMap';
 import type { MapPointer } from './lib/mapWindow';
+import { productDisplayState } from './lib/productDisplay';
 
 /** One settlement tier of the Treasury balance.
  *
@@ -657,14 +658,16 @@ export default function App() {
   const [lazyLinks, setLazyLinks] = useState<EcoLink[]>([]);
   const expandedHubs = useRef(new Set<string>());
 
-  const { state, connectionError } = useMonitorState(mode);
+  const { state: observedState, connectionError } = useMonitorState(mode);
+  const state = useMemo(() => observedState ? productDisplayState(observedState) : observedState,
+    [observedState]);
   const paintedMode = mode ? paintedMonitorMode(mode, realmLinks) : null;
   const graphState = useMemo<EcosystemState | null>(() => {
     if (!state || (!lazyNodes.length && !lazyLinks.length)) return state;
     const extraNodes = newLazyNodes(state.nodes, lazyNodes);
     const linkKeys = new Set(state.links.map((link) => `${link.source}|${link.target}`));
     const extraLinks = lazyLinks.filter((link) => !linkKeys.has(`${link.source}|${link.target}`));
-    return { ...state, nodes: [...state.nodes, ...extraNodes], links: [...state.links, ...extraLinks] };
+    return productDisplayState({ ...state, nodes: [...state.nodes, ...extraNodes], links: [...state.links, ...extraLinks] });
   }, [state, lazyNodes, lazyLinks]);
 
   // Past the server's size threshold the tick no longer carries the graph — see
@@ -675,7 +678,7 @@ export default function App() {
   const windowedMap = useWindowedMap(tickNodes, tickLinks, mapPointer);
   const mapState = useMemo<EcosystemState | null>(
     () => (graphState
-      ? { ...graphState, nodes: windowedMap.nodes, links: windowedMap.links }
+      ? productDisplayState({ ...graphState, nodes: windowedMap.nodes, links: windowedMap.links })
       : graphState),
     [graphState, windowedMap.nodes, windowedMap.links],
   );

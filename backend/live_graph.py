@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from product_display import node_display_description, node_display_label
+
 #: Human names for the groups the graph uses, per locale. A group with no entry is named by
 #: its own key rather than dropped: an unnamed kind of node is still a fact about the map.
 _GROUP_NAMES: dict[str, dict[str, str]] = {
@@ -99,7 +101,7 @@ def _nodes(state: dict | None) -> list[dict[str, Any]]:
 
 
 def _label(node: dict[str, Any]) -> str:
-    return str(node.get("label") or node.get("id") or "node")
+    return node_display_label(node)
 
 
 def neighbours(state: dict | None, node_id: str) -> list[tuple[str, str]]:
@@ -158,7 +160,7 @@ def describe_node(state: dict | None, node_id: str, locale: str = "en") -> str:
     wired = neighbours(state, str(node_id))
     metrics = _metric_text(node)
     url = str(node.get("url") or node.get("url_internal") or "").strip()
-    description = str(node.get("description") or "").strip()
+    description = node_display_description(node).strip()
     if description and description[-1] not in ".!?…":
         description += "."
 

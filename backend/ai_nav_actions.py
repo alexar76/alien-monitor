@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from product_display import SYMMARTYS_ALIASES, is_symmartys_node
+
 # Core nodes the monitor can focus — aliases cover the five base locales
 # (en / ru / es / fr / zh) plus common transliterations.
 NODE_ALIASES: dict[str, tuple[str, ...]] = {
@@ -391,6 +393,8 @@ def _match_live_node(q: str, state: dict | None) -> tuple[int, str] | None:
         if not nid:
             continue
         candidates = [nid, nid.replace("_", " "), nid.replace("-", " ")]
+        if is_symmartys_node(n):
+            candidates.extend(SYMMARTYS_ALIASES)
         label = str(n.get("label") or "").strip()
         if label:
             candidates.append(label)
