@@ -98,6 +98,18 @@ def test_a_stranger_hub_that_sells_no_esim_is_still_a_hub(monkeypatch):
     assert _by_url(result, STRANGER_HUB)["group"] == "peer_hub"
 
 
+def test_a_declared_hub_can_sell_esims_without_becoming_a_shop(monkeypatch):
+    result, _ = _run(monkeypatch, {
+        f"{HUB}/ai-market/v2/search": _search(_quote_row(STRANGER_HUB)),
+        f"{STRANGER_HUB}/.well-known/ai-market.json": {
+            "name": "New Catalogue", "federation": {"role": "hub"},
+        },
+    }, [{"url": STRANGER_HUB, "name": "New Catalogue"}])
+    node = _by_url(result, STRANGER_HUB)
+    assert (node["group"], node["role"], node["icon"]) == ("peer_hub", "hub", "hub")
+    assert node["status"] == "idle", "missing health cannot demote a declared hub"
+
+
 def test_a_seller_without_categories_or_protocol_still_appears(monkeypatch):
     """The gate used to need an oracle-ish category or a hub's protocol; selling eSIMs is enough."""
     result, _ = _run(monkeypatch, {

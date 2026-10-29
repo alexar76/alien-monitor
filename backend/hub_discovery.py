@@ -589,23 +589,50 @@ def _estate(url: Any) -> str:
 
 
 
-def _is_peer_hub(well_known: dict[str, Any]) -> bool:
-    """Does this peer run a hub, rather than being a single capability service?
+def _declared_peer_role(well_known: Any) -> str:
+    """The peer's own role, separate from the protocol it speaks.
 
-    Read from what the peer publishes about itself — `hub_version`, or a v2 entry in
-    `protocol_versions` — never inferred from its URL or its categories. A hub that
-    advertises no oracle-ish category used to be dropped by the relevance filter, so the one
-    kind of peer whose whole purpose is to have peers of its own was the one kind the map
-    could not show.
+    `federation.role` is already published by provider nodes. Also accept a top-level
+    `role` for a peer that does not use that envelope. Unknown or malformed declarations
+    never become hub roles by truthiness.
     """
     if not isinstance(well_known, dict):
-        return False
+        return ""
+    federation = well_known.get("federation")
+    for value in (
+        federation.get("role") if isinstance(federation, dict) else None,
+        well_known.get("role"),
+    ):
+        if isinstance(value, str) and value.strip():
+            return value.strip().lower()
+    return ""
+
+
+def _peer_hub_protocol(well_known: dict[str, Any]) -> str:
+    """Known legacy health convention; never the authority for an explicit role."""
+    if not isinstance(well_known, dict):
+        return ""
     if str(well_known.get("hub_version") or "").strip():
-        return True
+        return "v2"
     versions = well_known.get("protocol_versions")
     if isinstance(versions, (list, tuple)):
-        return any(str(v).strip().lower() in ("v2", "2", "2.0") for v in versions)
-    return False
+        declared = {str(v).strip().lower() for v in versions}
+        if declared & {"v2", "2", "2.0"}:
+            return "v2"
+        manifest = well_known.get("manifest_url")
+        if declared & {"v1", "1", "1.0"} and isinstance(manifest, str) and _displayable_url(manifest):
+            return "v1"
+    return ""
+
+
+def _is_peer_hub(well_known: dict[str, Any]) -> bool:
+    role = _declared_peer_role(well_known)
+    if role:
+        return role == "hub"
+    if not isinstance(well_known, dict) or well_known.get("node_version"):
+        return False
+    # Backwards compatibility for catalogues that predate role declarations.
+    return bool(_peer_hub_protocol(well_known))
 
 
 def _attach_declaration(
@@ -977,7 +1004,13 @@ async def _build_peer_node(
         if isinstance(wk, dict):
             well_known = wk
     matched = _matches(categories, cfg.categories)
+    hub_protocol = _peer_hub_protocol(well_known)
     is_hub = _is_peer_hub(well_known)
+    declared_hub = _declared_peer_role(well_known) == "hub"
+    if declared_hub:
+        # A catalogue can sell eSIMs and still explicitly be a hub. The seller heuristic
+        # is only for legacy kit nodes that have no role declaration of their own.
+        esim = None
     own_peers = well_known.get("peers")
     has_own_peers = isinstance(own_peers, list) and len(own_peers) > 0
     ours = _estate(base) or _estate(hub_own_url)
@@ -991,29 +1024,10 @@ async def _build_peer_node(
     approved_stranger = trust_declared_identity and foreign
     if not (matched or is_hub or esim or approved_stranger):
         return None
-    # `hub_version` alone over-matches: ATLAS reports 0.1.0 and GAIA reports one too, because
-    # every satellite is built on the hub's manifest shape — so that field on its own would
-    # turn the sensor gateway into a "hub" and throw away the classification that actually
-    # tells an operator what the node does. Render as a hub only when there is something
-    # hub-shaped to show: peers of its own, or a hub that the capability filter would have
-    # dropped anyway.
-    # ONLY when it has peers of its own. "hub_version and no matching category" looked like a
-    # reasonable second signal and was not: ATLAS, GAIA, BASANOS and MOMUS all report a
-    # hub_version and none of them match the oracle filter, so they were promoted to hubs and
-    # lost the classification that says what they actually do. A hub with no peers has no
-    # ecosystem to draw, which is the only reason this ring exists.
-    #
-    # OUR OWN satellites are already first-class nodes on this map — ATLAS, GAIA, MOMUS and
-    # BASANOS each have their own seeded entity and layer — and every one of them reports a
-    # hub_version, because they are built on the hub's manifest shape. Promoting those to the
-    # hub ring throws away what they are. But a stranger's hub is on nobody's map: if it is
-    # not drawn as a hub it is not drawn at all, and a NEWLY deployed hub has zero peers,
-    # which is the whole case this feature exists for. So the rule splits by estate:
-    #   * somebody else's domain + hub_version  -> a hub, peers or no peers;
-    #   * our own domain + hub_version          -> a hub only if it federates with someone,
-    #                                              otherwise it stays the satellite it is.
-    # (`ours` / `foreign` are computed above, where the relevance filter needs them too.)
-    render_as_hub = is_hub and (foreign or has_own_peers)
+    # Explicit role wins regardless of protocol, domain, or the size of a new catalogue.
+    # Only the LEGACY inference needs the estate guard: our own seeded satellites also
+    # publish hub_version and must retain their sensor/oracle classification.
+    render_as_hub = is_hub and (declared_hub or foreign or has_own_peers)
 
     node_id = _node_id(well_known, base_url)
     label = str(well_known.get("name") or peer.get("name") or node_id)[:80]
@@ -1040,7 +1054,12 @@ async def _build_peer_node(
     # above from the peer's own well-known document.
     status = "idle"
     # An eSIM operator's health is its seller node's, where the kit puts it.
-    health_url = f"{base_url}{_ESIM_HEALTH_PATH}" if esim else _health_url(base_url, is_hub=render_as_hub)
+    if esim:
+        health_url = f"{base_url}{_ESIM_HEALTH_PATH}"
+    elif render_as_hub and hub_protocol == "v1":
+        health_url = f"{base_url}/health"
+    else:
+        health_url = _health_url(base_url, is_hub=render_as_hub and hub_protocol == "v2")
     health = await _get_json(
         client, health_url, allow_private=cfg.peer_allow_private, timeout=cfg.timeout,
     )
@@ -1128,7 +1147,8 @@ async def _build_peer_node(
             "url": base_url,
             "description": clip_description(
                 well_known.get("description")
-                or f"Federated hub — {int(metrics.get('peers', 0))} peers of its own"
+                or ("Federated catalogue — AIMarket v1" if hub_protocol == "v1"
+                    else f"Federated hub — {int(metrics.get('peers', 0))} peers of its own")
             ),
             "metrics": metrics,
             "status": status,

@@ -99,13 +99,15 @@ def test_competing_galaxy_affiliation():
     assert "hunt.modelmarket.dev" in nodes[3]["hub"].get("url", "")
 
 
-def test_discovered_peer_is_its_own_hub():
+def test_discovered_hub_is_its_own_hub():
     nodes = [
         {
             "id": "peer_oracles",
             "label": "Oracle Family",
             "url": "https://oracles.modelmarket.dev/family",
             "discovered": True,
+            "group": "peer_hub",
+            "role": "hub",
         }
     ]
     apply_hub_affiliation(nodes, primary_hub_url="https://modelmarket.dev")

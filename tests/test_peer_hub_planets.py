@@ -52,6 +52,20 @@ class TestDiscoveryKeepsHubs:
         assert not hub_discovery._is_peer_hub({})
         assert not hub_discovery._is_peer_hub(None)
 
+    def test_a_legacy_federation_catalog_is_a_hub_on_the_map(self):
+        assert hub_discovery._is_peer_hub({
+            "protocol_versions": ["v1", "mcp"],
+            "manifest_url": "https://catalog.example/ai-market/manifest",
+        })
+        # A bare v1/MCP service has not declared a federation catalogue.
+        assert not hub_discovery._is_peer_hub({"protocol_versions": ["v1", "mcp"]})
+        assert not hub_discovery._is_peer_hub({
+            "protocol_versions": ["mcp"], "manifest_url": "https://catalog.example/manifest",
+        })
+        assert not hub_discovery._is_peer_hub({
+            "protocol_versions": ["v1"], "manifest_url": "javascript:alert(1)",
+        })
+
     def test_its_peers_become_nodes_around_it(self):
         cfg = hub_discovery.DiscoveryConfig(allow_private=True)
         nodes, links = hub_discovery._peer_hub_children(HUB_WELL_KNOWN, "hub:theirs", cfg)
@@ -914,7 +928,10 @@ def test_an_approved_stranger_stays_on_the_map_whatever_it_advertises(monkeypatc
     hub admitted is drawn; a non-matching service on our OWN estate still is not (it is seeded)."""
     import asyncio
 
+    fetched = []
+
     async def fake_get_json(client, url, **kwargs):
+        fetched.append(url)
         if url.endswith("/federation/peers"):
             return {"peers": [{"url": "https://agent-exec.448c.org", "name": "agent-exec",
                                "capabilities_count": 0, "trust_score": 0.265},
@@ -928,6 +945,8 @@ def test_an_approved_stranger_stays_on_the_map_whatever_it_advertises(monkeypatc
                     "manifest_url": "https://agent-exec.448c.org/manifest.json"}
         if "tool.ours.example" in url and "well-known" in url:
             return {"name": "our-tool", "protocol_versions": ["v1"]}
+        if url == "https://agent-exec.448c.org/health":
+            return {"ok": True, "service": "agent-exec"}
         return None
 
     monkeypatch.setattr(hub_discovery, "_get_json", fake_get_json)
@@ -939,4 +958,15 @@ def test_an_approved_stranger_stays_on_the_map_whatever_it_advertises(monkeypatc
     assert "agent-exec" in by_label, "an approved stranger vanished from the map on approval"
     node = by_label["agent-exec"]
     assert node["hop"] == 1 and node["metrics"].get("trust_score") == 0.265
+    assert (node["group"], node["role"], node["icon"]) == ("peer_hub", "hub", "hub")
+    assert node["status"] == "active"
+    from ecosystem_layout import local_ecosystem_radius, node_position
+
+    centre = node_position("hub")
+    distance = math.dist(tuple(node["position"][k] for k in ("x", "y", "z")),
+                         tuple(centre[k] for k in ("x", "y", "z")))
+    assert distance > local_ecosystem_radius(), "legacy hub stayed inside Modelmarket's shelf"
+    assert "https://agent-exec.448c.org/health" in fetched
+    assert "https://agent-exec.448c.org/ai-market/v2/health" not in fetched
+    assert sum(n["id"] == node["id"] for n in res["nodes"]) == 1
     assert "our-tool" not in by_label, "a non-matching service on our own estate became a twin sphere"
