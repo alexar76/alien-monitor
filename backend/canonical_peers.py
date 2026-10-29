@@ -189,6 +189,12 @@ def _from_factory(url: str) -> str | None:
 
 
 def _from_host(url: str) -> str | None:
+    from product_display import symmartys_identity_url
+
+    # A reverse-proxied provider has its own signer and catalogue. The apex
+    # fallback below describes the Hub itself, not every service under it.
+    if symmartys_identity_url(url):
+        return None
     lab = _from_lab_hub(url)
     if lab:
         return lab

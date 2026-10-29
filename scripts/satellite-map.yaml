@@ -1405,7 +1405,7 @@ satellites:
     repo: symmartys
     github_published: false
     knowledge_visible: true
-    deployment_status: local-prepared
+    deployment_status: live
     description: "SYMMARTYS — public-record facts for agents that trade: EU VAT (VIES), legal entities (GLEIF LEI), company registers, EORI, domains (RDAP), ECB rates, sanctions lists (OFAC with wallets, EU, UK), business days, Bitcoin timestamps, web evidence captures and dead man's switch timers — every answer signed with its source, fetch time and SHA-256."
     description_i18n:
       ru: "SYMMARTYS — публичные факты для агентов, которые торгуют: НДС-номера ЕС (VIES), юрлица (GLEIF LEI), реестры компаний, EORI, домены (RDAP), курсы ЕЦБ, санкционные списки (OFAC с кошельками, ЕС, Великобритания), рабочие дни, метки времени в Биткоине, снимки страниц как доказательство и таймеры dead man's switch — каждый ответ подписан с источником, временем получения и SHA-256."
@@ -1448,13 +1448,13 @@ satellites:
       - pytest
       - docker-build
     notes: >
-      SYMMARTYS is the local rename of the existing signed public-record provider.
+      SYMMARTYS replaced the existing signed public-record provider on 2026-10-29.
       Source of truth: symmartys/ in this workspace; new GitHub, GHCR, PyPI and MCP Registry
       publication is pending and must not be claimed. Knowledge remains visible independently
-      of GitHub publication. Fleet preparation: scripts/deploy_symmartys.sh, port 9351,
-      deploy/nginx/symmartys.modelmarket.dev.conf. Target service URL and provider route require
-      the local changes to be deployed. Existing signing identity and data must be migrated
-      explicitly; no new identity may silently replace them.
+      of GitHub publication. The active canonical route is /providers/symmartys on modelmarket.dev,
+      port 9351. Existing signing keys, data and operator settings were retained; the former
+      route remains an alias to the same provider. The public landing and API are available
+      at https://symmartys.modelmarket.dev/ with HTTPS and automatic certificate renewal.
 
   - id: escrow-signer
     repo: escrow-signer

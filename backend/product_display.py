@@ -9,6 +9,28 @@ SYMMARTYS_ALIASES = ("symmartys", "симмартис", "συμμάρτυς", "e
 _FORMER_BRAND = re.compile(r"(?<![\w./:@-])emporion(?![\w./:@-])", re.IGNORECASE)
 
 
+def symmartys_identity_url(value: str) -> str | None:
+    """One observed provider behind its old and new first-party addresses.
+
+    This is an address alias, never a label claim. Paths belonging to other
+    services on the same host do not acquire this identity.
+    """
+    try:
+        url = urlsplit(str(value or ""))
+        if url.scheme not in {"https", "http"} or url.query or url.fragment:
+            return None
+        if url.port not in {None, 443 if url.scheme == "https" else 80}:
+            return None
+        path = url.path.rstrip("/")
+        if (url.hostname in {"emporion.modelmarket.dev", "symmartys.modelmarket.dev"} and not path) or (
+            url.hostname == "modelmarket.dev" and path in {"/providers/emporion", "/providers/symmartys"}
+        ):
+            return "https://modelmarket.dev/providers/symmartys"
+    except ValueError:
+        pass
+    return None
+
+
 def current_product_label(value: str) -> str:
     """Replace the human brand only, never URLs, capability ids or package names."""
     return _FORMER_BRAND.sub("SYMMARTYS", value)

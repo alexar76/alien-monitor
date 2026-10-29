@@ -343,6 +343,10 @@ def _slugify(value: str) -> str:
 
 
 def _node_id(well_known: dict[str, Any], base_url: str) -> str:
+    from product_display import symmartys_identity_url
+
+    if symmartys_identity_url(base_url):
+        return "symmartys"
     eco = well_known.get("ecosystem") if isinstance(well_known.get("ecosystem"), dict) else {}
     candidate = ""
     if isinstance(eco, dict) and isinstance(eco.get("project"), str):
@@ -561,7 +565,12 @@ import node_palette
 
 def _norm_url(url: Any) -> str:
     """One spelling for one host, so two peer lists agree about what is the same node."""
-    text = str(url or "").strip().rstrip("/").lower()
+    from product_display import symmartys_identity_url
+
+    text = str(url or "").strip()
+    # Only comparison keys change; the observed URL and signed declaration stay
+    # verbatim on the node. Old peer gossip becomes an edge to the same provider.
+    text = (symmartys_identity_url(text) or text).rstrip("/").lower()
     for prefix in ("https://", "http://"):
         if text.startswith(prefix):
             text = text[len(prefix):]
