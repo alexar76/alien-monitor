@@ -905,3 +905,38 @@ def test_a_strangers_child_url_that_is_not_http_is_not_drawn():
     ]}
     nodes, _ = hub_discovery._peer_hub_children(hostile, "hub:theirs", cfg)
     assert [n["url"] for n in nodes] == ["https://ok.example"]
+
+
+def test_an_approved_stranger_stays_on_the_map_whatever_it_advertises(monkeypatch):
+    """agent-exec.448c.org (2026-10-29): drawn while it knocked, gone the moment our hub approved
+    it — its well-known names protocols v1 + mcp and no categories, so the approved-peer path's
+    relevance filter (oracle / simulation / beacon / hub / eSIM) dropped it. A hop-1 stranger our
+    hub admitted is drawn; a non-matching service on our OWN estate still is not (it is seeded)."""
+    import asyncio
+
+    async def fake_get_json(client, url, **kwargs):
+        if url.endswith("/federation/peers"):
+            return {"peers": [{"url": "https://agent-exec.448c.org", "name": "agent-exec",
+                               "capabilities_count": 0, "trust_score": 0.265},
+                              {"url": "https://tool.ours.example", "name": "our-tool",
+                               "capabilities_count": 0}],
+                    "pending": []}
+        if "127.0.0.1" in url and "well-known" in url:
+            return {"hub_url": "https://ours.example", "hub_version": "3.16.1"}
+        if "agent-exec.448c.org" in url and "well-known" in url:
+            return {"name": "agent-exec", "protocol_versions": ["v1", "mcp"],
+                    "manifest_url": "https://agent-exec.448c.org/manifest.json"}
+        if "tool.ours.example" in url and "well-known" in url:
+            return {"name": "our-tool", "protocol_versions": ["v1"]}
+        return None
+
+    monkeypatch.setattr(hub_discovery, "_get_json", fake_get_json)
+    monkeypatch.setattr(hub_discovery, "url_is_safe", lambda *a, **k: True)
+    monkeypatch.delenv("ALIEN_PUBLIC_HUB_URL", raising=False)
+    res = asyncio.run(hub_discovery.discover_async("http://127.0.0.1:9083"))
+
+    by_label = {n["label"]: n for n in res["nodes"]}
+    assert "agent-exec" in by_label, "an approved stranger vanished from the map on approval"
+    node = by_label["agent-exec"]
+    assert node["hop"] == 1 and node["metrics"].get("trust_score") == 0.265
+    assert "our-tool" not in by_label, "a non-matching service on our own estate became a twin sphere"

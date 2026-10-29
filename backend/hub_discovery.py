@@ -980,7 +980,16 @@ async def _build_peer_node(
     is_hub = _is_peer_hub(well_known)
     own_peers = well_known.get("peers")
     has_own_peers = isinstance(own_peers, list) and len(own_peers) > 0
-    if not (matched or is_hub or esim):
+    ours = _estate(base) or _estate(hub_own_url)
+    foreign = bool(ours) and _estate(base_url) != ours
+    # A stranger OUR hub approved stays on the map whatever it advertises. While it knocked it
+    # was drawn from metadata alone (_build_pending_node); approval sent it through the
+    # relevance filter below, and a service that is neither an oracle-ish capability nor a hub
+    # vanished at the moment it was admitted (agent-exec.448c.org, 2026-10-29: protocols
+    # v1 + mcp, no categories). deserves_sphere draws every hop-1 peer; this is the same rule.
+    # Our own estate keeps the filter: those services are seeded nodes already.
+    approved_stranger = trust_declared_identity and foreign
+    if not (matched or is_hub or esim or approved_stranger):
         return None
     # `hub_version` alone over-matches: ATLAS reports 0.1.0 and GAIA reports one too, because
     # every satellite is built on the hub's manifest shape — so that field on its own would
@@ -1003,8 +1012,7 @@ async def _build_peer_node(
     #   * somebody else's domain + hub_version  -> a hub, peers or no peers;
     #   * our own domain + hub_version          -> a hub only if it federates with someone,
     #                                              otherwise it stays the satellite it is.
-    ours = _estate(base) or _estate(hub_own_url)
-    foreign = bool(ours) and _estate(base_url) != ours
+    # (`ours` / `foreign` are computed above, where the relevance filter needs them too.)
     render_as_hub = is_hub and (foreign or has_own_peers)
 
     node_id = _node_id(well_known, base_url)
