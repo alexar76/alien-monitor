@@ -50,5 +50,8 @@ describe('current SYMMARTYS display over observed provider data', () => {
     expect(productDisplayNodes(nodes)).toBe(nodes);
     expect(currentProductLabel('EMPORION · emporion.vat.check@v1 · https://emporion.modelmarket.dev · aimarket-emporion'))
       .toBe('SYMMARTYS · emporion.vat.check@v1 · https://emporion.modelmarket.dev · aimarket-emporion');
+    expect(currentProductLabel('ЭМПОРИОН / Емпорион — публичные факты'))
+      .toBe('SYMMARTYS / SYMMARTYS — публичные факты');
+    expect(currentProductLabel('суперэмпорион')).toBe('суперэмпорион');
   });
 });

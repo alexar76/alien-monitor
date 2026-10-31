@@ -3,7 +3,7 @@ import type { EcoLink, EcoNode } from '../App';
 /** A display projection during rollout; identities, routes and signed evidence stay observed. */
 export function currentProductLabel(value: string): string {
   // A human brand token only: do not rewrite hosts, package names or capability ids.
-  return value.replace(/(?<![\w./:@-])emporion(?![\w./:@-])/gi, 'SYMMARTYS');
+  return value.replace(/(?<![\p{L}\p{N}_./:@-])(?:emporion|эмпорион|емпорион)(?![\p{L}\p{N}_./:@-])/giu, 'SYMMARTYS');
 }
 
 export function isSymmartysNode(node: Pick<EcoNode, 'id'> & Partial<EcoNode>): boolean {

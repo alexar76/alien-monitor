@@ -5,8 +5,8 @@ import re
 from typing import Any
 from urllib.parse import urlsplit
 
-SYMMARTYS_ALIASES = ("symmartys", "симмартис", "συμμάρτυς", "emporion", "эмпорион")
-_FORMER_BRAND = re.compile(r"(?<![\w./:@-])emporion(?![\w./:@-])", re.IGNORECASE)
+SYMMARTYS_ALIASES = ("symmartys", "симартис", "симмартис", "συμμάρτυς", "emporion", "эмпорион")
+_FORMER_BRAND = re.compile(r"(?<![\w./:@-])(?:emporion|эмпорион|емпорион)(?![\w./:@-])", re.IGNORECASE)
 
 
 def symmartys_identity_url(value: str) -> str | None:
@@ -65,4 +65,4 @@ def node_display_description(node: dict[str, Any]) -> str:
 
 def symmartys_question(question: str) -> str:
     """Both names resolve to the current brand in natural-language registry matching."""
-    return re.sub(r"\b(?:emporion|эмпорион|симмартис|συμμάρτυς)\b", "symmartys", question, flags=re.IGNORECASE)
+    return re.sub(r"\b(?:emporion|эмпорион|емпорион|симартис|симмартис|συμμάρτυς)\b", "symmartys", question, flags=re.IGNORECASE)

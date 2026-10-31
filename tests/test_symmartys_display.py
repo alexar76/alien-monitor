@@ -26,7 +26,7 @@ def legacy_state():
 def test_current_and_former_names_focus_the_actual_observed_node_without_changing_its_id():
     state = legacy_state()
     original = copy.deepcopy(state)
-    for question in ("show symmartys", "покажи симмартис", "show emporion", "покажи эмпорион"):
+    for question in ("show symmartys", "покажи симартис", "покажи симмартис", "show emporion", "покажи эмпорион"):
         assert match_live_node_id(question, state) == "provider:hub:emporion"
     answer = describe_node(state, "provider:hub:emporion", "en")
     assert "**SYMMARTYS — public-record facts**" in answer
@@ -50,7 +50,7 @@ def test_prompt_uses_current_display_name_but_keeps_the_observed_id_url_and_metr
 
 def test_registry_aliases_answer_with_current_name(monkeypatch):
     monkeypatch.setattr(ecosystem_registry, "build_live_federation_context", lambda: "- SYMMARTYS (16 capabilities)")
-    for question in ("where is symmartys", "where is emporion", "где эмпорион"):
+    for question in ("where is symmartys", "где симартис", "where is emporion", "где эмпорион"):
         assert "SYMMARTYS" in ecosystem_registry.live_component_answer(question)
 
 
@@ -63,6 +63,8 @@ def test_unpublished_local_source_does_not_become_an_invented_github_repository(
 
 
 def test_text_projection_does_not_modify_addresses_or_a_strangers_same_named_provider():
+    assert current_product_label("ЭМПОРИОН / Емпорион — публичные факты") == "SYMMARTYS / SYMMARTYS — публичные факты"
+    assert current_product_label("суперэмпорион") == "суперэмпорион"
     assert current_product_label("EMPORION · emporion.vat.check@v1 · https://emporion.modelmarket.dev") == (
         "SYMMARTYS · emporion.vat.check@v1 · https://emporion.modelmarket.dev")
     assert not is_symmartys_node({"id": "foreign-provider", "label": "EMPORION", "url": "https://other.example"})
