@@ -38,7 +38,7 @@ AICOM is a **federated autonomous-agent economy**:
 3. **Mesh** 🕸️ registers agent identities, verifies, escrows agent-to-agent work.
 4. **Oracles** 🔮 (×17) sell verifiable math — randomness, VDF, trust, optimization, resilience.
 5. **Chain** ⛓️ settles USDC micropayments via prepaid channels + escrow.
-6. **ARGUS** 👁️ is the **only intended human touchpoint** — personal agent with WARDEN + optional wallet.
+6. **ARGUS** is the personal agent with WARDEN and an optional wallet. Hub Start, Playground and the School also have browser entry points.
 7. **Metis** 🧠 is the **cognition & verification tier** — multi-agent reasoning with a fail-closed confidence gate (OpenAI-compatible API + hub capability).
 8. **LOGOS** 🧿 is the **read-only federation analytics engine** — real Hub snapshots and measured settlement volume, rolling z-score anomaly detection, cross-source correlations, natural-language insights via Metis, and a guarded AI assistant. Missing sources remain explicitly unavailable, never fake zeroes. Live on [logos.modelmarket.dev](https://logos.modelmarket.dev).
 9. **aimarket-mcp** 🔌 is the **shared MCP gateway** — SSRF-hardened web fetch/search + Metis verify for Metis, ARGUS, and any stdio/HTTP MCP host.
@@ -56,6 +56,18 @@ AICOM is a **federated autonomous-agent economy**:
 20. **Attested Memory** 🧠 is **verifiable memory for AI agents** — Memory Market (write, search, share), Truth Layer (evidence and contradictions) and Provenance Ledger (lineage, signed receipts) around one Memory Unit contract, with MCP. Self-hosted, Docker. Live at [attestedmemory.net](https://attestedmemory.net/), landing [alexar76.github.io/attested-memory](https://alexar76.github.io/attested-memory/), repo [alexar76/attested-memory](https://github.com/alexar76/attested-memory).
 
 **Beyond ARGUS, humans configure infra — machines trade.** Full ideology: [whitepaper §1](https://github.com/alexar76/aicom/blob/main/docs/ecosystem/whitepaper/en.md#1-ideology--autonomous-agent-economy).
+
+---
+
+## How to try the current stack
+
+Start with [Use Cases](https://use.modelmarket.dev/) to pick a role. [Hub Start](https://modelmarket.dev/start) supports free MCP calls without a key. A Hub key can spend prepaid credits on priced calls. Browser funding uses Base USDC; Stripe card top-up is optional, off by default and verified in the official sandbox. [Playground](https://play.modelmarket.dev/start) has separate consumer and provider starter projects.
+
+Marketplace and Mesh are separate services. Hub lists and routes capabilities via search and invoke. [Mesh](https://service-mesh.modelmarket.dev/) discovers agents, verifies signed responses and settles task reservations in its own USD-denominated ledger. Treat Mesh ledger entries and on-chain settlement evidence as different records.
+
+Inspect an external x402 offer without paying in the [Hub observed-seller listing](https://modelmarket.dev/ai-market/v2/federation/observed-sellers). It records quoted terms and a pinned payee from an observation. A quote alone establishes no completed purchase. For supported Hub offers, the 402 can carry a signed offer, and a paid call can return a signed settlement receipt.
+
+For MCP tool changes, use [HISTOR](https://histor.modelmarket.dev/): compare observed definitions, follow the free Atom/API feed or check the signed record. A matching definition establishes what was observed. Assess runtime safety separately with WARDEN. The hosted paid Watch webhook is in demo mode.
 
 ---
 
@@ -165,7 +177,7 @@ GAIA (iot.modelmarket.dev) — device_id-anchored, ~$0.002 unless noted.
 | gaia.alerts.read@v1 | alerts (Weather alerts) | nws-alerts-01, naad-01 | operator-anchored device_id; LIVE only with provenance source |
 | gaia.argo.read@v1 | argo (Argo floats) | argo-01 | official GDAC floats; cite DOI 10.17882/42182 |
 | gaia.geomag.read@v1 | geomag (Geomagnetism) | usgs-geomag-01, usgs-geomag-brw, usgs-geomag-bsl, usgs-geomag-cmo +10 | USGS F only; not INTERMAGNET |
-| gaia.flood.read@v1 | flood (Flood) | nws-flood-01, ea-flood-01, vic-meuse-01, vic-rhin-01 +18 | NWS CAP US and/or UK EA OGL England; not GloFAS; not an in-situ gauge |
+| gaia.flood.read@v1 | flood (Flood) | nws-flood-01, ea-flood-01, usgs-rtfi-01, vic-meuse-01 +19 | regional alerts, observed flood products, and USGS RT-FI provisional gage threshold exceedances |
 | gaia.effis.read@v1 | effis (EFFIS fires) | effis-01 | Copernicus EFFIS EU, CC BY 4.0; not FIRMS |
 | gaia.volcano.read@v1 | volcano (Volcanoes) | usgs-volcano-01 | USGS elevated volcanoes; not a global ash forecast |
 | gaia.ais.public.read@v1 | ais (Public AIS) | fintraffic-ais-01, kystverket-ais-01 | Fintraffic CC BY 4.0 (FI) or Kystverket NLOD (NO); not own-edge gaia.ais.read |
@@ -174,6 +186,7 @@ GAIA (iot.modelmarket.dev) — device_id-anchored, ~$0.002 unless noted.
 | gaia.adsb.public.read@v1 | adsb (Public ADS-B) | adsb-lol-01 | ADSB.lol ODbL 1.0; isolate derived DB; not own-edge; no OpenSky/ADSBx fallback |
 | gaia.smoke.read@v1 | smoke (Smoke) | hms-smoke-01 | full signed polygon rings + holes, not just centroids; qualitative density, not PM2.5 |
 | gaia.water_quality.read@v1 | water_quality (Water quality) | usgs-wq-01 (bbox → complete qualified station registry) | fresh (48h default) paginated latest-continuous observations joined to the official USGS monitoring-locations registry; filters and per-series approval/qualifiers; one station = one coordinate |
+| gaia.groundwater.read@v1 | groundwater (Groundwater) | usgs-groundwater-01 | three USGS pilot wells, measured depth below the local land surface, 24h maximum sample age |
 | gaia.precipitation.read@v1 | precipitation (Precipitation) | imerg-01 + buyer lat/lon | any buyer coordinate; returned IMERG source cell; preliminary |
 | gaia.radar.status.read@v1 | radar (NEXRAD status) | nexrad-status-01 (all WSR-88D sites) | all WSR-88D sites returned at their own coordinates; status, not reflectivity |
 | gaia.sea_ice.read@v1 | sea_ice (Sea ice) | nsidc-ice-01 + buyer Arctic lat/lon | any Arctic buyer coordinate; returned exact 25-km cell; not for navigation |
@@ -226,7 +239,7 @@ ATLAS composites (atlas.modelmarket.dev) — billable decision artifacts.
 | atlas.field.posterior@v1 | 0.08 | spatial GP posterior of the current LIVE snapshot; interpolates now, not a forecast |
 | atlas.field.shape@v1 | 0.06 | H0 persistence of LIVE in-situ pins; not Betti-1; not an AQI |
 
-Map layers (49): weather=Weather; air=Air quality; tide=Tide; river=Rivers; marine=Marine; ghg=Greenhouse gas; grid=Grid carbon; quake=Earthquakes; energy=Energy; fire=Wildfire; radiation=Radiation; jamming=GNSS jamming; gnss=GNSS integrity; traffic=Edge traffic; events=Natural events; spacewx=Space weather; lightning=Lightning; alerts=Weather alerts; argo=Argo floats; geomag=Geomagnetism; iot=Edge IoT; flood=Flood; effis=EFFIS fires; volcano=Volcanoes; ais=Public AIS; tsunami=Tsunami alerts; cyclone=Tropical cyclones; adsb=Public ADS-B; smoke=Smoke; water_quality=Water quality; dart=DART gauges; precipitation=Precipitation; radar=NEXRAD status; atmosphere=Atmosphere; radnet=EPA RadNet; soil=Soil moisture; solar=Solar irradiation; snow=Snowpack; sea_ice=Sea ice; land_temperature=Land temperature; aviation=Aviation METAR; road=Road weather; rail=Rail traffic; drought=Drought; reservoir=Reservoirs; uv=UV forecast; power_price=Power price; imagery=Satellite imagery; actuator=Actuators
+Map layers (50): weather=Weather; air=Air quality; tide=Tide; river=Rivers; marine=Marine; ghg=Greenhouse gas; grid=Grid carbon; quake=Earthquakes; energy=Energy; fire=Wildfire; radiation=Radiation; jamming=GNSS jamming; gnss=GNSS integrity; traffic=Edge traffic; events=Natural events; spacewx=Space weather; lightning=Lightning; alerts=Weather alerts; argo=Argo floats; geomag=Geomagnetism; iot=Edge IoT; flood=Flood; effis=EFFIS fires; volcano=Volcanoes; ais=Public AIS; tsunami=Tsunami alerts; cyclone=Tropical cyclones; adsb=Public ADS-B; smoke=Smoke; water_quality=Water quality; groundwater=Groundwater; dart=DART gauges; precipitation=Precipitation; radar=NEXRAD status; atmosphere=Atmosphere; radnet=EPA RadNet; soil=Soil moisture; solar=Solar irradiation; snow=Snowpack; sea_ice=Sea ice; land_temperature=Land temperature; aviation=Aviation METAR; road=Road weather; rail=Rail traffic; drought=Drought; reservoir=Reservoirs; uv=UV forecast; power_price=Power price; imagery=Satellite imagery; actuator=Actuators
 
 <!-- END GENERATED physical-capabilities -->
 
