@@ -11,7 +11,9 @@ payment infrastructure. The only synthetic element is the wallet funding
 
 from __future__ import annotations
 
+import contextlib
 import json
+import math
 import os
 import random
 import time
@@ -195,6 +197,38 @@ _MAX_OPEN_FAILURES = 5
 _OPEN_BACKOFF_S = 60.0
 _MAX_OPEN_BACKOFF_S = 900.0
 
+#: What the hub says when a channel can no longer pay, whatever the buyer's own tally says.
+#: From 2026-11-01 15:26 UTC to 2026-11-08 the UNI buyer kept spending rounds on a channel
+#: the hub had emptied ("insufficient balance", balance 0.0, while the buyer counted $86.43
+#: left) and then expired after its 24 hours ("channel not open"): the hub debits more per
+#: call than the catalogue price the buyer subtracted, and nothing made the buyer let go.
+#: The realm bought nothing for almost seven days; the UNI hub saw four probe calls a day.
+_DEAD_CHANNEL_DETAILS = ("insufficient balance", "channel not open", "channel expired",
+                         "channel closed")
+
+#: Open the next channel this long before the hub expires the current one (24 h), so the
+#: last calls of a channel never meet "channel not open".
+_CHANNEL_EXPIRY_MARGIN_S = 900.0
+
+#: Rounds in a row that chose offers, held a channel and still bought nothing: after this
+#: many the map says the realm's economy is stalled and gives the hub's last refusal.
+#: A round is ~25 s, so this is about eight minutes.
+_STALL_ROUNDS = 20
+
+
+def _epoch(value: Any) -> float:
+    """Epoch seconds for the hub's ISO time (``2026-11-01T21:59:19Z``); 0.0 when absent."""
+    raw = str(value or "").strip()
+    if not raw:
+        return 0.0
+    try:
+        moment = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.timestamp()
+
 
 def is_channel_open_rate_limit(message: str) -> bool:
     """The hub is pacing channel/open — not a broken realm economy.
@@ -235,6 +269,12 @@ class ExternalAIBuyer:
         self._settle_signing_context = None
         self._settle_accounts: list[str] = []
         self._open_retry_at = 0.0
+        # The hub's word on the channel, not the buyer's tally: when it expires, and why it
+        # stopped paying (set from a 402, cleared when the channel is let go).
+        self._channel_expires_at = 0.0
+        self._channel_dead = ""
+        self._last_refusal = ""
+        self._empty_rounds = 0
 
     def _hub_takes_real_money(self) -> bool:
         """Does this hub settle with real funds? Asked once, cached, and fail-closed.
@@ -386,15 +426,15 @@ class ExternalAIBuyer:
 
             spent = 0.0
             for item in selected:
+                if self._channel_dead:
+                    break  # the hub has said this channel cannot pay; do not keep asking
                 try:
                     result = self._invoke(item, channel_id)
                     if result:
                         purchases += 1
-                        spent += float(item.get("price_per_call_usd") or 0)
-                        self._channel_balance = max(
-                            0.0,
-                            self._channel_balance - float(item.get("price_per_call_usd") or 0),
-                        )
+                        charged = self._charged_usd(result, item)
+                        spent += charged
+                        self._channel_balance = self._balance_after(result, charged)
                         cat = _infer_category(item.get("name", ""), item.get("description", ""))
                         self.preferred_categories.add(cat)
                         self.purchase_history.append({
@@ -421,7 +461,11 @@ class ExternalAIBuyer:
                 except Exception as exc:
                     print(f"[Buyer] Invoke failed for {item.get('name', '?')}: {exc}")
 
-            # Deliberately NOT closed here: the next round reuses it (see _channel_for).
+            # Deliberately NOT closed here: the next round reuses it (see _channel_for) —
+            # unless the hub has said it cannot pay any more. Then it is settled now, and
+            # the next round opens a fresh one instead of spending rounds on a dead channel.
+            dead = self._channel_dead
+            self._empty_rounds = 0 if purchases else self._empty_rounds + 1
 
             # Only refusals used to reach the log, so a realm that was trading looked exactly
             # like one that was not. One line per round says which it is.
@@ -430,6 +474,10 @@ class ExternalAIBuyer:
                 f"(channel balance ${self._channel_balance:.3f})"
             )
             print(f"[Buyer] round {self.rounds_completed + 1}: {self._last_round_note}")
+            if dead:
+                print(f"[Buyer] hub says channel {channel_id} cannot pay ({dead}); "
+                      f"settling it, the next round opens a new one")
+                self._close_channel(channel_id)
 
         except Exception as exc:
             print(f"[Buyer] Round failed: {exc}")
@@ -451,7 +499,57 @@ class ExternalAIBuyer:
             "last_open_error": self._last_open_error,
             "unspent_deposit_usd": round(float(self._unspent.get("usd") or 0.0), 6),
             "halted": self._halt_reason,
+            "channel_expires_at": (
+                datetime.fromtimestamp(self._channel_expires_at, timezone.utc).isoformat()
+                if self._channel_expires_at else ""
+            ),
+            "empty_rounds": self._empty_rounds,
+            "last_refusal": self._last_refusal,
+            # Rounds that held a channel and chose offers yet bought nothing, many in a row:
+            # the realm has no economy even though nothing was refused at channel/open.
+            "stalled": (
+                f"{self._empty_rounds} buyer rounds in a row bought nothing on "
+                f"{self.hub_url} — last refusal: {self._last_refusal or 'none given'}"
+                if self._empty_rounds >= _STALL_ROUNDS else ""
+            ),
         }
+
+    @staticmethod
+    def _usd(value: Any) -> float | None:
+        try:
+            amount = float(value)
+        except (TypeError, ValueError):
+            return None
+        return amount if amount >= 0 else None
+
+    def _charged_usd(self, result: Any, item: dict) -> float:
+        """What the channel was debited for this call.
+
+        The price is the hub's own `price_usd`, else the offer's. A channel is billed in whole
+        cents, rounded UP (the hub's `_dollars_to_cents_bill`, BILLING-001: a sub-cent price
+        must not be served free), so a $0.003 call takes $0.01 from the channel. Subtracting
+        the bare price is how the buyer counted $13.57 spent of a channel the hub had emptied.
+        """
+        price = self._usd(result.get("price_usd")) if isinstance(result, dict) else None
+        if price is None:
+            price = float(item.get("price_per_call_usd") or 0)
+        if price <= 0:
+            return 0.0
+        return max(1, math.ceil(round(price * 100, 6))) / 100
+
+    def _balance_after(self, result: Any, charged: float) -> float:
+        """The channel's balance after a call: the hub's `remaining_balance` when it gives
+        one. The buyer's own subtraction is only a fallback — it used the catalogue price,
+        the hub debited more, and the two drifted $86 apart in a day (2026-11-01)."""
+        remaining = self._usd(result.get("remaining_balance")) if isinstance(result, dict) else None
+        if remaining is not None:
+            return remaining
+        return max(0.0, self._channel_balance - charged)
+
+    def _channel_expiring(self) -> bool:
+        return bool(self._channel_expires_at) and (
+            time.time() >= self._channel_expires_at - _CHANNEL_EXPIRY_MARGIN_S
+        )
 
     def _catalogue(self, budget: float) -> list[dict]:
         """What this realm actually sells, from its own signed manifest.
@@ -847,6 +945,13 @@ class ExternalAIBuyer:
                             print("[Buyer] channel opened but no debit secret was returned")
                         self._unspent = {}          # this deposit is now a channel
                         self._channel_wallet = str(payer or "")
+                        # What the hub credited and when it will expire the channel: the
+                        # buyer reuses a channel on these, never on its own guesses.
+                        credited = self._usd(ch.get("balance_usd", data.get("balance_usd")))
+                        if credited is not None:
+                            self._opened_deposit_usd = credited
+                        self._channel_expires_at = _epoch(ch.get("expires_at") or data.get("expires_at"))
+                        self._channel_dead = ""
                         return ch.get("channel_id") or data.get("channel_id")
                     body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
                     challenge = str((body or {}).get("challenge") or "").strip()
@@ -881,10 +986,17 @@ class ExternalAIBuyer:
         realm economy would have stalled after twenty rounds however well the deposit door
         worked. One deposit now carries rounds until it is spent.
         """
-        if self._channel_id and needed > 0 and self._channel_balance >= needed:
+        if (
+            self._channel_id
+            and needed > 0
+            and self._channel_balance >= needed
+            and not self._channel_dead
+            and not self._channel_expiring()
+        ):
             return self._channel_id
         if self._channel_id:
-            # Spent (or unusable) — settle it before asking for another.
+            # Spent, refused by the hub, or about to expire — settle it before asking for
+            # another.
             self._close_channel(self._channel_id)
         channel_id = self._open_channel(budget, vu, item)
         if channel_id:
@@ -935,6 +1047,14 @@ class ExternalAIBuyer:
                     return r.json()
                 # The status alone ("Invoke HTTP 403") named no cause; the hub says which.
                 print(f"[Buyer] Invoke HTTP {r.status_code} for {item.get('capability_id', '?')}: {r.text[:160]}")
+                detail = ""
+                with contextlib.suppress(ValueError):
+                    body = r.json()
+                    if isinstance(body, dict):
+                        detail = str(body.get("detail") or body.get("error") or "")
+                self._last_refusal = f"HTTP {r.status_code} {detail or r.text[:80]}".strip()
+                if r.status_code == 402 and any(d in detail.lower() for d in _DEAD_CHANNEL_DETAILS):
+                    self._channel_dead = detail
                 return None
         except Exception as exc:
             print(f"[Buyer] Invoke error for {item.get('capability_id', '?')}: {exc}")
@@ -967,3 +1087,5 @@ class ExternalAIBuyer:
             if channel_id == self._channel_id:
                 self._channel_id = ""
                 self._channel_balance = 0.0
+                self._channel_expires_at = 0.0
+                self._channel_dead = ""

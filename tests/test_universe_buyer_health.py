@@ -739,7 +739,8 @@ class TestATradingRoundIsVisible:
         result = buyer.execute_round(vu=None)
         assert result["purchases"] == 1
         out = capsys.readouterr().out
-        assert "[Buyer] round 1: bought 1 of 2 for $0.002" in out
+        # $0.002 is billed as one whole cent on a channel (the hub's BILLING-001 ceiling).
+        assert "[Buyer] round 1: bought 1 of 2 for $0.010" in out
         assert buyer.status()["last_round_note"].startswith("bought 1 of 2")
 
 
@@ -749,3 +750,201 @@ def test_the_publishers_example_is_used_before_types():
               "properties": {"value": {"type": "number"}, "from": {"type": "string"}, "to": {"type": "string"}},
               "examples": [{"value": 26.2, "from": "mi", "to": "km"}]}
     assert ueb.sample_input(schema) == {"value": 26.2, "from": "mi", "to": "km"}
+
+
+class TestTheHubsWordOnTheChannel:
+    """The buyer trusts the hub about its channel, not its own tally.
+
+    UNI, 2026-11-01: the channel the buyer opened at 21:59 UTC the day before held $124.73
+    on the hub. The buyer subtracted catalogue prices and counted $13.57 spent; the hub
+    debited all of it by 15:26 UTC and answered 402 "insufficient balance" (balance 0.0)
+    while the buyer believed $86.43 was left. At 22:02 the hub expired the channel after
+    its 24 hours and answered "channel not open". The buyer reused the channel on its own
+    number, so every round from then on bought nothing — for almost seven days, with the
+    UNI hub seeing only four probe calls a day and the map saying nothing.
+    """
+
+    class _Hub:
+        """A hub whose /invoke answers from a script, recording the channel used."""
+
+        def __init__(self, answers):
+            self.answers = list(answers)
+            self.channels: list[str] = []
+
+        def client(self):
+            hub = self
+
+            class _Resp:
+                def __init__(self, status, body):
+                    self.status_code = status
+                    self._body = body
+                    self.text = __import__("json").dumps(body)
+
+                def json(self):
+                    return self._body
+
+            class _Client:
+                def __init__(self, *a, **k):
+                    pass
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+
+                def post(self, url, json=None, headers=None):
+                    hub.channels.append((headers or {}).get("X-Payment-Channel", ""))
+                    status, body = hub.answers.pop(0) if hub.answers else (200, {"ok": True})
+                    return _Resp(status, body)
+
+            return _Client
+
+    def _buyer(self, offers):
+        buyer = ueb.ExternalAIBuyer(hub_url="http://127.0.0.1:9183")
+        buyer._hub_takes_real_money = lambda: False                     # type: ignore[method-assign]
+        buyer._search = lambda vu, intent, budget: offers               # type: ignore[method-assign]
+        buyer._select = lambda matches, budget: matches                 # type: ignore[method-assign]
+        opened: list[str] = []
+        closed: list[str] = []
+
+        def _open(budget, vu=None, item=None):
+            opened.append(f"ch_{len(opened) + 1}")
+            buyer._opened_deposit_usd = 10.0
+            return opened[-1]
+
+        def _close(cid):
+            closed.append(cid)
+            if cid == buyer._channel_id:
+                buyer._channel_id = ""
+                buyer._channel_balance = 0.0
+                buyer._channel_expires_at = 0.0
+                buyer._channel_dead = ""
+
+        buyer._open_channel = _open                                     # type: ignore[method-assign]
+        buyer._close_channel = _close                                   # type: ignore[method-assign]
+        return buyer, opened, closed
+
+    def _round(self, buyer, hub):
+        import unittest.mock as mock
+
+        with mock.patch.object(ueb.httpx, "Client", hub.client()):
+            return buyer.execute_round(vu=None)
+
+    OFFERS = [{"capability_id": "a@v1", "price_per_call_usd": 0.003},
+              {"capability_id": "b@v1", "price_per_call_usd": 0.003}]
+
+    def test_the_hubs_remaining_balance_and_charge_are_what_count(self):
+        buyer, _, _ = self._buyer(self.OFFERS)
+        hub = self._Hub([(200, {"price_usd": 0.01, "remaining_balance": 9.99}),
+                         (200, {"price_usd": 0.01, "remaining_balance": 9.98})])
+        result = self._round(buyer, hub)
+        assert result["purchases"] == 2
+        assert buyer._channel_balance == 9.98, "the catalogue price would have left 9.994"
+        assert "for $0.020" in buyer.status()["last_round_note"]
+
+    def test_without_a_remaining_balance_the_charge_is_subtracted(self):
+        buyer, _, _ = self._buyer(self.OFFERS[:1])
+        hub = self._Hub([(200, {"price_usd": 0.01})])
+        self._round(buyer, hub)
+        assert round(buyer._channel_balance, 6) == 9.99
+
+    def test_insufficient_balance_settles_the_channel_and_the_next_round_opens_another(self):
+        buyer, opened, closed = self._buyer(self.OFFERS)
+        hub = self._Hub([(402, {"success": False, "error": "payment_required",
+                                "detail": "insufficient balance", "needed": 0.003, "balance": 0.0})])
+        first = self._round(buyer, hub)
+        assert first["purchases"] == 0
+        assert hub.channels == ["ch_1"], "it kept invoking a channel the hub had emptied"
+        assert closed == ["ch_1"] and buyer._channel_id == ""
+        second = self._round(buyer, hub)
+        assert second["purchases"] == 2
+        assert opened == ["ch_1", "ch_2"] and hub.channels[1:] == ["ch_2", "ch_2"]
+
+    def test_channel_not_open_is_let_go_too(self):
+        buyer, opened, closed = self._buyer(self.OFFERS)
+        hub = self._Hub([(402, {"error": "payment_required", "detail": "channel not open"})])
+        self._round(buyer, hub)
+        assert closed == ["ch_1"]
+        assert buyer.status()["last_refusal"] == "HTTP 402 channel not open"
+        self._round(buyer, hub)
+        assert opened == ["ch_1", "ch_2"]
+
+    def test_a_refusal_that_is_not_about_the_channel_keeps_it(self):
+        buyer, opened, closed = self._buyer(self.OFFERS)
+        hub = self._Hub([(400, {"error": "incomplete_input", "detail": "requires value"}),
+                         (200, {"price_usd": 0.003, "remaining_balance": 9.997})])
+        result = self._round(buyer, hub)
+        assert result["purchases"] == 1 and closed == [] and opened == ["ch_1"]
+
+    def test_a_channel_about_to_expire_is_replaced_before_the_hub_expires_it(self):
+        buyer, opened, closed = self._buyer(self.OFFERS[:1])
+        self._round(buyer, self._Hub([]))
+        buyer._channel_expires_at = ueb.time.time() + ueb._CHANNEL_EXPIRY_MARGIN_S - 1
+        self._round(buyer, self._Hub([]))
+        assert opened == ["ch_1", "ch_2"] and closed == ["ch_1"]
+        buyer._channel_expires_at = ueb.time.time() + 86400
+        self._round(buyer, self._Hub([]))
+        assert opened == ["ch_1", "ch_2"], "a channel with a day left was replaced"
+
+    def test_open_records_what_the_hub_credited_and_its_expiry(self):
+        import unittest.mock as mock
+
+        class _Resp:
+            status_code = 200
+            headers = {"content-type": "application/json"}
+            text = ""
+
+            def json(self):
+                return {"channel": {"channel_id": "ch-9", "balance_usd": 124.73,
+                                    "expires_at": "2026-11-01T21:59:19Z"},
+                        "channel_secret": "s"}
+
+        class _Client:
+            def __init__(self, *a, **k):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def post(self, url, json=None, **k):
+                return _Resp()
+
+        buyer = ueb.ExternalAIBuyer(hub_url="http://127.0.0.1:9183")
+        buyer._unspent = {"tx_hash": "0xtx", "payer": "0xpayer", "usd": 100.0}
+        with mock.patch.object(ueb.httpx, "Client", _Client):
+            assert buyer._open_channel(100.0) == "ch-9"
+        assert buyer._opened_deposit_usd == 124.73
+        assert buyer.status()["channel_expires_at"] == "2026-11-01T21:59:19+00:00"
+
+    def test_rounds_that_buy_nothing_reach_the_map(self):
+        buyer, _, _ = self._buyer(self.OFFERS)
+        buyer._channel_for = lambda needed, budget, vu, item: "ch_1"     # type: ignore[method-assign]
+        buyer._channel_balance = 1.0
+        hub = self._Hub([(402, {"error": "payment_required", "detail": "secret mismatch"})] * 200)
+        for _ in range(ueb._STALL_ROUNDS - 1):
+            self._round(buyer, hub)
+        assert buyer.status()["stalled"] == ""
+        self._round(buyer, hub)
+        stalled = buyer.status()["stalled"]
+        assert stalled.startswith(f"{ueb._STALL_ROUNDS} buyer rounds in a row bought nothing")
+        assert "secret mismatch" in stalled
+        summary: dict = {}
+        apply_buyer_health(summary, {"buyer": buyer.status()})
+        assert summary["economy_stalled"] == stalled
+        # one purchase clears it
+        self._round(buyer, self._Hub([(200, {"remaining_balance": 0.9})]))
+        assert buyer.status()["stalled"] == ""
+
+
+def test_a_sub_cent_call_is_billed_a_whole_cent_like_the_hub_does():
+    """UNI 2026-11-08: 27 calls priced $0.002-0.005 took exactly 27 cents from the channel."""
+    buyer = ueb.ExternalAIBuyer(hub_url="http://127.0.0.1:9183")
+    item = {"price_per_call_usd": 0.003}
+    assert buyer._charged_usd({}, item) == 0.01
+    assert buyer._charged_usd({"price_usd": 0.35}, item) == 0.35      # float noise not rounded up
+    assert buyer._charged_usd({"price_usd": 0.351}, item) == 0.36
+    assert buyer._charged_usd({"price_usd": 0}, item) == 0.0

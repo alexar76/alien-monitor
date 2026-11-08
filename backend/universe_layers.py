@@ -412,3 +412,7 @@ def apply_buyer_health(summary: dict[str, Any], scenario_output: dict[str, Any] 
         summary["economy_stalled"] = (
             f"channel/open refused by {buyer.get('hub_url')} — {blocked}"
         )
+    elif str(buyer.get("stalled") or "").strip():
+        # Every channel/open answered, yet the rounds buy nothing: 2026-11-01..08 on UNI,
+        # with the header showing four calls a day and nothing saying why.
+        summary["economy_stalled"] = str(buyer["stalled"]).strip()
