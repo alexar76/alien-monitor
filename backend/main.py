@@ -68,6 +68,7 @@ from monitor_auth import (
     trusted_proxies,
 )
 from monitor_base_path import MonitorBasePathMiddleware
+from provider_events import router as provider_events_router
 from ai_assistant import (
     EMPTY_QUESTION,
     any_provider_configured,
@@ -944,6 +945,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(MonitorBasePathMiddleware)
+app.include_router(provider_events_router)
 
 _MONITOR_AUTH = [Depends(require_monitor_auth)]
 _MONITOR_READ_AUTH = [Depends(require_monitor_read_auth)]

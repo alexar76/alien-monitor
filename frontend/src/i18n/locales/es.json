@@ -15,6 +15,24 @@
     "prometheusDegraded": "Prometheus no disponible — capa de métricas on-chain degradada (opcional :9090)",
     "economyStalled": "ECONOMÍA DEL REINO DETENIDA"
   },
+  "providerEvents": {
+    "button": "Proveedores",
+    "title": "Actividad de proveedores externos",
+    "scope": "Eventos registrados por nuestros servicios en vivo en las últimas 24 horas. Los intentos y los resultados se cuentan por separado.",
+    "close": "Cerrar actividad de proveedores",
+    "operation": "Operación",
+    "succeeded": "Éxitos",
+    "failed": "Fallos",
+    "attempted": "Intentos",
+    "card_quote": "Cotización de tarjeta",
+    "card_issue": "Emisión de tarjeta",
+    "card_checkout": "Pago con tarjeta",
+    "quotes": "Cotizaciones",
+    "search": "Búsqueda",
+    "loading": "Cargando actividad de proveedores…",
+    "disabled": "La actividad de proveedores está desactivada.",
+    "unavailable": "La actividad de proveedores no está disponible."
+  },
   "mode": {
     "simulation": "SIMULACIÓN",
     "live": "RED EN VIVO",

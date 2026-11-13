@@ -69,6 +69,9 @@ services:
       ALIEN_AI_PROVIDER:
       ALIEN_API_TOKEN:
       ALIEN_MONITOR_API_TOKEN:
+      ALIEN_PROVIDER_EVENTS_TOKEN:
+      ALIEN_PROVIDER_EVENTS_TOKEN_FILE:
+      ALIEN_PROVIDER_EVENTS_DB:
       HUB_URL: ${HUB_URL:-http://127.0.0.1:9083}
       # Operator-facing Hub link on node cards (not the Docker API target above).
       ALIEN_PUBLIC_HUB_URL: ${ALIEN_PUBLIC_HUB_URL:-https://modelmarket.dev}

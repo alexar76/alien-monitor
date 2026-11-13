@@ -15,6 +15,24 @@
     "prometheusDegraded": "Prometheus 不可用 — 可选的链上指标层已降级（启动 :9090 或忽略）",
     "economyStalled": "该域经济已停滞"
   },
+  "providerEvents": {
+    "button": "服务商",
+    "title": "外部服务商活动",
+    "scope": "过去 24 小时内由我们的线上服务报告的事件。尝试和结果分别计数。",
+    "close": "关闭服务商活动",
+    "operation": "操作",
+    "succeeded": "成功",
+    "failed": "失败",
+    "attempted": "尝试",
+    "card_quote": "卡片报价",
+    "card_issue": "发行卡片",
+    "card_checkout": "卡片支付",
+    "quotes": "行情报价",
+    "search": "搜索",
+    "loading": "正在加载服务商活动…",
+    "disabled": "服务商事件采集已关闭。",
+    "unavailable": "无法加载服务商活动。"
+  },
   "mode": {
     "simulation": "模拟",
     "live": "实时网络",

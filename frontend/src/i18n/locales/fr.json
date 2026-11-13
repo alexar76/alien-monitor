@@ -15,6 +15,24 @@
     "prometheusDegraded": "Prometheus indisponible — couche de métriques on-chain optionnelle dégradée (démarrez :9090 ou ignorez)",
     "economyStalled": "ÉCONOMIE DU REALM À L’ARRÊT"
   },
+  "providerEvents": {
+    "button": "Prestataires",
+    "title": "Activité des prestataires externes",
+    "scope": "Événements signalés par nos services en production au cours des dernières 24 heures. Les tentatives et les résultats sont comptés séparément.",
+    "close": "Fermer l’activité des prestataires",
+    "operation": "Opération",
+    "succeeded": "Succès",
+    "failed": "Échecs",
+    "attempted": "Tentatives",
+    "card_quote": "Devis de carte",
+    "card_issue": "Émission de carte",
+    "card_checkout": "Paiement par carte",
+    "quotes": "Cotations",
+    "search": "Recherche",
+    "loading": "Chargement de l’activité des prestataires…",
+    "disabled": "La collecte des événements est désactivée.",
+    "unavailable": "L’activité des prestataires est indisponible."
+  },
   "mode": {
     "simulation": "SIMULATION",
     "live": "RÉSEAU EN DIRECT",

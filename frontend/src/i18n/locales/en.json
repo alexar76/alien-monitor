@@ -15,6 +15,24 @@
     "prometheusDegraded": "Prometheus unavailable — optional on-chain metrics layer degraded (start :9090 or ignore)",
     "economyStalled": "REALM ECONOMY STALLED"
   },
+  "providerEvents": {
+    "button": "Providers",
+    "title": "External provider activity",
+    "scope": "Events reported by our live services in the last 24 hours. Attempts and outcomes are counted separately.",
+    "close": "Close provider activity",
+    "operation": "Operation",
+    "succeeded": "Successes",
+    "failed": "Failures",
+    "attempted": "Attempts",
+    "card_quote": "Card quote",
+    "card_issue": "Card issuance",
+    "card_checkout": "Card checkout",
+    "quotes": "Quotes",
+    "search": "Search",
+    "loading": "Loading provider activity…",
+    "disabled": "Provider activity is disabled.",
+    "unavailable": "Provider activity is unavailable."
+  },
   "mode": {
     "simulation": "SIMULATION",
     "live": "LIVE NETWORK",

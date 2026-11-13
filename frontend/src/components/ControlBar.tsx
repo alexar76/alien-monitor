@@ -24,6 +24,7 @@ interface Props {
   showKnocking: boolean;
   onToggleKnocking: () => void;
   knockingCount: number;
+  onShowProviders?: () => void;
   pulseIntensity: number;
   onPulseChange: (v: number) => void;
   themeColor: string;
@@ -48,6 +49,7 @@ export default function ControlBar({
   showKnocking,
   onToggleKnocking,
   knockingCount,
+  onShowProviders,
   pulseIntensity,
   onPulseChange,
   themeColor,
@@ -249,6 +251,16 @@ export default function ControlBar({
           <span className="knock-beacon-btn__count">{knockingCount}</span>
         )}
       </button>
+
+      {painted === 'real' && onShowProviders && (
+        <button
+          type="button"
+          onClick={onShowProviders}
+          className="glass-panel w-full md:w-auto px-3 py-2 text-[10px] font-mono uppercase rounded-lg text-white/70 hover:text-white"
+        >
+          {t('providerEvents.button')}
+        </button>
+      )}
 
       <div className="glass-panel flex items-center gap-2 px-3 py-2 rounded-lg w-full md:w-auto">
         <span className="text-[10px] font-mono text-white/30">{t('controls.pulse')}</span>

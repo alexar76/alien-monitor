@@ -11,6 +11,7 @@ import ReputationGraph from './components/ReputationGraph';
 import TransactionFlow from './components/TransactionFlow';
 import ChainScanner from './components/ChainScanner';
 import ControlBar from './components/ControlBar';
+import ProviderEvents from './components/ProviderEvents';
 import KnockingPanel from './components/KnockingPanel';
 import CryptoNotice from './components/CryptoNotice';
 import MobileDock, { type MobileSheet } from './components/MobileDock';
@@ -642,6 +643,7 @@ export default function App() {
   // on the block list.
   const [scanAddress, setScanAddress] = useState<string | null>(null);
   const [showKnocking, setShowKnocking] = useState(false);
+  const [showProviders, setShowProviders] = useState(false);
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>('none');
   const [theme, setTheme] = useState<'cyan' | 'magenta' | 'green'>('cyan');
   const [pulseIntensity, setPulseIntensity] = useState(1.0);
@@ -1099,12 +1101,17 @@ export default function App() {
         showKnocking={showKnocking}
         onToggleKnocking={handleToggleKnocking}
         knockingCount={knockingCount}
+        onShowProviders={() => setShowProviders(true)}
         pulseIntensity={pulseIntensity}
         onPulseChange={setPulseIntensity}
         themeColor={themeColor}
         mobileOpen={isMobile && mobileSheet === 'controls'}
         onMobileClose={() => handleMobileSheet('none')}
       />
+      )}
+
+      {showProviders && paintedMode === 'real' && (
+        <ProviderEvents onClose={() => setShowProviders(false)} themeColor={themeColor} />
       )}
 
       {/* Node detail panel */}
