@@ -54,6 +54,23 @@ def live_lottery_fresh() -> bool:
     )
 
 
+def live_lottery_status() -> dict:
+    """What /api/health says about the relayer's feed: its age and the last round it reported.
+
+    The relayer pushes only from inside a round, so a feed that stops means rounds stopped.
+    From 2026-11-01 or earlier to 2026-11-14 every UNI round reverted before its first push
+    and nothing outside the relayer's own log showed it; the alerter reads this instead.
+    """
+    ts = float(_LIVE_LOTTERY["ts"] or 0.0)
+    if not ts:
+        return {"fresh": False, "age_s": None, "round": None}
+    return {
+        "fresh": live_lottery_fresh(),
+        "age_s": round(datetime.now(UTC).timestamp() - ts, 1),
+        "round": int(_LIVE_LOTTERY["metrics"].get("round", 0)),
+    }
+
+
 def live_metrics_if_fresh() -> dict | None:
     if not live_lottery_fresh():
         return None

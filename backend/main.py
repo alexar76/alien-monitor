@@ -1058,6 +1058,9 @@ async def health():
         }
         if _universe_bootstrap is not None:
             body["bootstrap"] = _universe_bootstrap
+        from live_lottery_feed import live_lottery_status
+
+        body["lottery_feed"] = live_lottery_status()
     return body
 
 

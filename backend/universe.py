@@ -338,8 +338,40 @@ class VirtualUniverse(
             and self._contract_has_code(self.evm_nft_address)
         )
 
+    # keccak("currentRoundId()")[:4]: a view every AIAgentLottery has and no other UNI contract does.
+    _LOTTERY_PROBE = "0x9cbe5efd"
+
     def _lottery_contract_verified(self) -> bool:
-        return self._contract_has_code(self.evm_lottery_address)
+        """True only when the saved lottery address holds a lottery, not merely some contract.
+
+        The UNI chain is reset when its state passes the size cap, and the core contracts come back
+        from the deployer's nonce 0. A lottery address saved under an older deploy order then holds
+        whatever the new order put there: until 2026-11-14 (since 2026-11-01 or earlier) the saved
+        lottery was 0x9fe4..., the NFT. "Has code" passed, so the lottery was never redeployed and the
+        relayer drove its rounds against the NFT; every call reverted.
+        """
+        addr = self.evm_lottery_address
+        if not self._contract_has_code(addr):
+            return False
+        others = {
+            str(a).lower()
+            for a in (
+                getattr(self, name, None)
+                for name in (
+                    "evm_usdt_address", "evm_escrow_address", "evm_nft_address",
+                    "evm_acex_vault_address", "evm_acex_registry_address", "evm_acex_lending_address",
+                    "evm_acex_amm_address", "evm_acex_audit_pool_address",
+                )
+            )
+            if a
+        }
+        if str(addr).lower() in others:
+            return False
+        try:
+            out = self._w3.eth.call({"to": self._w3.to_checksum_address(addr), "data": self._LOTTERY_PROBE})
+        except Exception:
+            return False
+        return len(out) == 32
 
     def _all_contracts_verified(self) -> bool:
         return self._core_contracts_verified() and self._lottery_contract_verified()
@@ -407,22 +439,31 @@ class VirtualUniverse(
                 if self._start_blockchain_locked():
                     self.deploy_contracts()
 
+        from acex_uni import acex_uni_enabled, seed_acex_markets
+
+        acex_on = acex_uni_enabled()
+        if acex_on and not self._acex_contracts_verified():
+            print("[Universe] Deploying ACEX CapShare stack on Anvil…")
+            self._deploy_acex_forge()
+
+        # The lottery goes after ACEX's deploy. On a fresh chain the ACEX contracts then keep the
+        # addresses that ARGUS UNI's env already names: they were deployed with no lottery ahead of
+        # them while the old check accepted the NFT as the lottery.
         if not self._lottery_contract_verified():
+            if self.evm_lottery_address:
+                note = f"saved lottery {self.evm_lottery_address} is not an AIAgentLottery; deploying one"
+                print(f"[Universe] {note}")
+                self._bootstrap_notes.append(note)
+                self.evm_lottery_address = None
             print("[Universe] Deploying AIAgentLottery on Anvil…")
             self._deploy_lottery_forge()
             self._save_config()
 
-        from acex_uni import acex_uni_enabled, seed_acex_markets
-
-        if acex_uni_enabled():
-            if not self._acex_contracts_verified():
-                print("[Universe] Deploying ACEX CapShare stack on Anvil…")
-                self._deploy_acex_forge()
-            if self._acex_contracts_verified():
-                try:
-                    seed_acex_markets(self)
-                except Exception as exc:
-                    print(f"[Universe] ACEX market seed skipped: {exc}")
+        if acex_on and self._acex_contracts_verified():
+            try:
+                seed_acex_markets(self)
+            except Exception as exc:
+                print(f"[Universe] ACEX market seed skipped: {exc}")
 
         if not self.solana_lottery_program_id and _universe_solana_enabled():
             self._ensure_solana_deployer_keypair()

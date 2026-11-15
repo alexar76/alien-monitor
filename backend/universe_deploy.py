@@ -106,6 +106,10 @@ class ContractDeployMixin:
                     addr = tx.get("contractAddress")
                     if addr and addr.startswith("0x"):
                         return addr
+                if contract_name:
+                    # A named contract is in the transactions or this run did not deploy it. The text
+                    # search below would return the first hex string in the file instead.
+                    continue
                 text = run.read_text(encoding="utf-8")
                 m = re.search(r"0x[a-fA-F0-9]{40}", text)
                 if m:

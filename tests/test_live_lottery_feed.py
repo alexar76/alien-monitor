@@ -47,3 +47,19 @@ def test_stale_feed_is_not_served():
     clear_live_lottery()
     assert live_metrics_if_fresh() is None
     assert lottery_events_if_fresh() == []
+
+
+def test_health_status_reports_the_feed_age_and_round():
+    # /api/health publishes this; the alerter reads it to tell running rounds from stopped ones.
+    import live_lottery_feed
+    from live_lottery_feed import live_lottery_status
+
+    clear_live_lottery()
+    assert live_lottery_status() == {"fresh": False, "age_s": None, "round": None}
+    set_live_lottery({"mode": "uni", "metrics": {"round": 13}})
+    s = live_lottery_status()
+    assert s["fresh"] is True and s["round"] == 13 and 0 <= s["age_s"] < 5
+    live_lottery_feed._LIVE_LOTTERY["ts"] -= 3600  # an hour without a push
+    s = live_lottery_status()
+    assert s["fresh"] is False and s["age_s"] >= 3600 and s["round"] == 13
+    clear_live_lottery()
