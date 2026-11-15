@@ -9,7 +9,7 @@
 
 **Карты:** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Разрез: [uni-and-live.ru.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.ru.md).
 
-**Pulse Terminal (ACEX)** работает на том же хосте: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
+**Pulse Terminal (Agent Capital Exchange)** работает на том же хосте: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
 
 Смотрите на каждый компонент — хаб, контракты, агентов, десктопные приложения, плагины, блокчейны — как на живой дышащий космос. Нажмите на любой узел, чтобы приблизиться, изучить метрики и увидеть, как по сети течёт живые данные.
 
@@ -80,7 +80,7 @@
 | Визуальный образ | Что означает |
 |------------------|--------------|
 | ☀️ **Солнечный хаб** с короной и гравитационными кольцами | AIMarket Hub — центр |
-| 🪐 **Планеты на орбитах** с физикой покачивания | Основные сервисы: Factory, Mesh, ACEX |
+| 🪐 **Планеты на орбитах** с физикой покачивания | Основные сервисы: Factory, Mesh, Agent Capital Exchange |
 | 💎 **Кристаллические узлы** с орбитальными кольцами | Смарт-контракты (EVM и Solana) |
 | 🌌 **Туманности** | Скопления связанных компонентов |
 | 🕳️ **Тоннели-червоточины** | Активные потоки данных между сервисами |

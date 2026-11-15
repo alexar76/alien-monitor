@@ -9,7 +9,7 @@
 
 **Mapas:** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). División: [uni-and-live.es.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.es.md).
 
-**Pulse Terminal (ACEX)** corre en el mismo host: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
+**Pulse Terminal (Agent Capital Exchange)** corre en el mismo host: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
 
 Observa cada componente —el hub, los contratos, los agentes, las aplicaciones de escritorio, los plugins, las cadenas— como un cosmos vivo que respira. Haz clic en cualquier nodo para acercarte, inspeccionar sus métricas y ver los datos fluyendo por la red en vivo.
 
@@ -79,7 +79,7 @@ Un **universo observable propio** donde cada cuerpo celeste es un componente viv
 | Elemento visual | Qué representa |
 |-----------------|----------------|
 | ☀️ **Hub solar** con corona y anillos de gravedad | AIMarket Hub — el centro |
-| 🪐 **Planetas en órbita** con física de oscilación | Servicios centrales: Factory, Mesh, ACEX |
+| 🪐 **Planetas en órbita** con física de oscilación | Servicios centrales: Factory, Mesh, Agent Capital Exchange |
 | 💎 **Nodos cristalinos** con anillos orbitales | Contratos inteligentes (EVM y Solana) |
 | 🌌 **Nebulosas** | Grupos de componentes relacionados |
 | 🕳️ **Túneles de agujero de gusano** | Flujos de datos activos entre servicios |

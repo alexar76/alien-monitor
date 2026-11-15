@@ -24,7 +24,7 @@
 
 **Maps:** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Split: [uni-and-live.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.md).
 
-**Pulse Terminal (ACEX)** runs on the same host: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)** — deploy both with `docker compose -f docker-compose.prod.yml up -d --build` or `./scripts/deploy_alien_monitor.sh` from the monorepo root.
+**Pulse Terminal (Agent Capital Exchange)** runs on the same host: **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)** — deploy both with `docker compose -f docker-compose.prod.yml up -d --build` or `./scripts/deploy_alien_monitor.sh` from the monorepo root.
 
 Watch every component — hub, contracts, agents, desktop apps, plugins, blockchains — as a living, breathing cosmos. Click any node to zoom in, inspect metrics, and see live data flowing through the network.
 
@@ -124,7 +124,7 @@ A **personal observable universe** where each celestial body is a living compone
 | Visual | Represents |
 |--------|-----------|
 | ☀️ **Solar hub** with corona + gravity rings | AIMarket Hub — the center |
-| 🪐 **Orbiting planets** with wobble physics | Core services: Factory, Mesh, ACEX |
+| 🪐 **Orbiting planets** with wobble physics | Core services: Factory, Mesh, Agent Capital Exchange |
 | 💎 **Crystalline nodes** with orbital rings | Smart contracts (EVM + Solana) |
 | 🌌 **Nebula clouds** | Clusters of related components |
 | 🕳️ **Wormhole tunnels** | Active data flows between services |

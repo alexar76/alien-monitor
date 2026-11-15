@@ -9,7 +9,7 @@
 
 **Cartes :** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/) (`ALIEN_MODE=universe`) · **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/) (`ALIEN_MODE=real`). Découpage : [uni-and-live.fr.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.fr.md).
 
-**Pulse Terminal (ACEX)** tourne sur le même hôte : **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
+**Pulse Terminal (Agent Capital Exchange)** tourne sur le même hôte : **[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**.
 
 Observez chaque composant — le hub, les contrats, les agents, les applications de bureau, les plugins, les chaînes — comme un cosmos vivant qui respire. Cliquez sur n'importe quel nœud pour vous en approcher, inspecter ses métriques et voir les données circuler dans le réseau en direct.
 
@@ -79,7 +79,7 @@ Un **univers observable personnel** où chaque corps céleste est un composant v
 | Élément visuel | Ce qu'il représente |
 |----------------|---------------------|
 | ☀️ **Hub solaire** avec couronne et anneaux de gravité | AIMarket Hub — le centre |
-| 🪐 **Planètes en orbite** avec physique d'oscillation | Services centraux : Factory, Mesh, ACEX |
+| 🪐 **Planètes en orbite** avec physique d'oscillation | Services centraux : Factory, Mesh, Agent Capital Exchange |
 | 💎 **Nœuds cristallins** avec anneaux orbitaux | Contrats intelligents (EVM et Solana) |
 | 🌌 **Nébuleuses** | Grappes de composants liés |
 | 🕳️ **Tunnels de trou de ver** | Flux de données actifs entre services |

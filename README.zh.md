@@ -9,7 +9,7 @@
 
 **地图：** **UNI** [https://monitor-uni.modelmarket.dev/](https://monitor-uni.modelmarket.dev/)（`ALIEN_MODE=universe`）· **LIVE** [https://monitor.modelmarket.dev/](https://monitor.modelmarket.dev/)（`ALIEN_MODE=real`）。划分：[uni-and-live.zh.md](https://github.com/alexar76/aicom/blob/main/docs/uni-and-live.zh.md)。
 
-**Pulse Terminal (ACEX)** 运行在同一主机：**[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**。
+**Pulse Terminal (Agent Capital Exchange)** 运行在同一主机：**[https://magic-ai-factory.com/pulse/](https://magic-ai-factory.com/pulse/)**。
 
 把每一个组件 —— 枢纽、合约、智能体、桌面应用、插件、区块链 —— 看作一片会呼吸的活体星空。点击任意节点即可放大、查看指标，并看到数据在网络中实时流动。
 
@@ -74,7 +74,7 @@
 | 视觉元素 | 代表什么 |
 |----------|----------|
 | ☀️ **恒星式枢纽**，带日冕与引力环 | AIMarket Hub —— 中心 |
-| 🪐 **环绕的行星**，带摆动物理 | 核心服务：Factory、Mesh、ACEX |
+| 🪐 **环绕的行星**，带摆动物理 | 核心服务：Factory、Mesh、Agent Capital Exchange |
 | 💎 **晶体节点**，带轨道环 | 智能合约（EVM 与 Solana） |
 | 🌌 **星云** | 相关组件的聚簇 |
 | 🕳️ **虫洞通道** | 服务之间正在发生的数据流 |

@@ -28,7 +28,7 @@ The 3D space represents the AIMarket ecosystem as a **cosmic structure**:
 | **Right** (+X) | Outer system | EVM contracts, Ethereum, NFT contract |
 | **Left** (-X) | Outer system | SDKs, Service Mesh, CLI tools |
 | **Top** (+Y) | Upper plane | Federation peers, Desktop Apps |
-| **Bottom** (-Y) | Lower plane | Plugins cluster, ACEX |
+| **Bottom** (-Y) | Lower plane | Plugins cluster, Agent Capital Exchange |
 | **Far** (+Z) | Deep space | Solana escrow, Solana chain |
 
 ### What You're Looking At
@@ -102,7 +102,7 @@ Each **celestial body** is a live component of the ecosystem:
 - Metrics: registered agents, active tasks, activity events
 - URL: usually `http://localhost:8090`
 
-**ACEX** (lower-right, cyan planet)
+**Agent Capital Exchange** (lower-right, cyan planet)
 - Agent Capital Exchange — ALP, CapShares, AgentNotes, Pulse AMM
 - Metrics: 24h volume, active listings
 
