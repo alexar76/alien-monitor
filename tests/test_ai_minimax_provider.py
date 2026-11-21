@@ -49,7 +49,7 @@ class TestConfigEntry:
         assert entry["base_url"] == "https://openrouter.ai/api/v1"
         assert entry["api_key_env"] == "OPENROUTER_API_KEY"
         # The slug the rest of the ecosystem already prices, not an invented model id.
-        assert entry["models"]["heavy"] == "minimax/minimax-m3"
+        assert entry["models"]["heavy"] == "qwen/qwen4-max"
 
     def test_the_key_is_not_in_the_file(self):
         """A provider key belongs in the environment; `deepseek_api` ships `sk-keep`."""

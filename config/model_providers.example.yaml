@@ -12,8 +12,8 @@ providers:
     base_url: https://openrouter.ai/api/v1
     enabled: true
     models:
-      heavy: minimax/minimax-m3
-      light: minimax/minimax-m3
+      heavy: qwen/qwen4-max
+      light: qwen/qwen3.8-flash
     provider_type: openai_compatible
   deepseek_api:
     api_key: null
