@@ -34,6 +34,10 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
   const notList = Array.isArray(live.not) ? live.not : [];
   const metrics = (node.metrics || {}) as Record<string, number | undefined>;
   const hasSplit = typeof metrics.ours === 'number' && typeof metrics.third_party === 'number';
+  // The hearth publishes its operator's agents (source + SHA-256) at /agents/; the backend matched
+  // each running handler's digest against it. Nothing is claimed when the catalogue was not read.
+  const catalogue = node.links?.catalogue || live.catalogue_url || '';
+  const hasPublished = typeof live.published === 'number' && typeof live.published_matching === 'number';
 
   return (
     <div className="mb-4" onClick={(e) => e.stopPropagation()}>
@@ -85,6 +89,15 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
           )}
         </div>
       ) : null}
+      {hasPublished ? (
+        <div className="text-[11px] font-mono text-white/55 mb-2">
+          {t(
+            'hearth.published_summary',
+            { matching: live.published_matching ?? 0, published: live.published ?? 0 },
+            '{{matching}} of {{published}} catalogued agents run exactly the published code',
+          )}
+        </div>
+      ) : null}
       <div className="space-y-1 mb-3 max-h-40 overflow-y-auto">
         {tenants.length > 0 ? (
           tenants.map((row, i) => (
@@ -102,6 +115,20 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
                     {t('hearth.owner_third_party', undefined, 'third-party')}
                     {row.owner.label ? ` · ${row.owner.label}` : ''}
                   </span>
+                ) : null}
+                {row.code === 'published' || row.code === 'differs' ? (
+                  <a
+                    href={catalogue ? `${catalogue}#${encodeURIComponent(row.slug || '')}` : undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-auto underline decoration-dotted underline-offset-2 hover:brightness-125"
+                    style={{ color: row.code === 'published' ? themeColor : EMBER }}
+                    title={t('hearth.code_title', { sha: row.handler_sha256 || '—' }, 'SHA-256 of the handler the hearth runs: {{sha}}')}
+                  >
+                    {row.code === 'published'
+                      ? t('hearth.code_published', undefined, 'code = catalogue')
+                      : t('hearth.code_differs', undefined, 'code ≠ catalogue')}
+                  </a>
                 ) : null}
               </div>
             </div>
@@ -131,6 +158,17 @@ export default function HestiaCard({ node, themeColor, t }: Props) {
             }}
           >
             {t('hearth.open_console', undefined, 'Open HESTIA console')} ↗
+          </a>
+        ) : null}
+        {catalogue ? (
+          <a
+            href={catalogue}
+            target="_blank"
+            rel="noreferrer"
+            className="block px-3 py-2 rounded-sm text-xs font-mono transition-colors hover:brightness-110"
+            style={{ backgroundColor: EMBER + '18', border: `1px solid ${EMBER}44`, color: EMBER }}
+          >
+            {t('hearth.open_catalogue', undefined, 'Open the agent catalogue: code and digests')} ↗
           </a>
         ) : null}
         {node.links?.pages || node.links?.landing || node.url ? (

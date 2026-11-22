@@ -659,7 +659,12 @@
     "no_tenants": "No tenants deployed on this hearth yet.",
     "open_console": "Open HESTIA console",
     "open_landing": "Open HESTIA landing",
-    "open_repo": "Open HESTIA repo"
+    "open_repo": "Open HESTIA repo",
+    "open_catalogue": "Open the agent catalogue: code and digests",
+    "code_published": "code = catalogue",
+    "code_differs": "code ≠ catalogue",
+    "code_title": "SHA-256 of the handler the hearth runs: {{sha}}",
+    "published_summary": "{{matching}} of {{published}} catalogued agents run exactly the published code"
   },
   "esim": {
     "role": "eSIM operator · runs the eSIM operator kit",

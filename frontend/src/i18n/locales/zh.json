@@ -659,7 +659,12 @@
     "no_tenants": "这个炉台上还没有部署智能体。",
     "open_console": "打开 HESTIA 控制台",
     "open_landing": "打开 HESTIA 页面",
-    "open_repo": "打开 HESTIA 仓库"
+    "open_repo": "打开 HESTIA 仓库",
+    "open_catalogue": "打开智能体目录：代码与哈希",
+    "code_published": "代码 = 目录",
+    "code_differs": "代码 ≠ 目录",
+    "code_title": "hearth 运行的处理程序 SHA-256：{{sha}}",
+    "published_summary": "目录中的 {{published}} 个智能体里有 {{matching}} 个运行的正是所发布的代码"
   },
   "esim": {
     "role": "eSIM 运营者 · 运行 eSIM 运营者套件",

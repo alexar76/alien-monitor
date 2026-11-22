@@ -659,7 +659,12 @@
     "no_tenants": "На этом очаге пока нет агентов.",
     "open_console": "Открыть консоль HESTIA",
     "open_landing": "Открыть страницу HESTIA",
-    "open_repo": "Открыть репозиторий HESTIA"
+    "open_repo": "Открыть репозиторий HESTIA",
+    "open_catalogue": "Открыть каталог агентов: код и хеши",
+    "code_published": "код = каталог",
+    "code_differs": "код ≠ каталог",
+    "code_title": "SHA-256 обработчика, который выполняет Гестия: {{sha}}",
+    "published_summary": "{{matching}} из {{published}} агентов каталога выполняют ровно опубликованный код"
   },
   "esim": {
     "role": "eSIM-оператор · работает на ките eSIM-оператора",

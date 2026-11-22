@@ -335,6 +335,11 @@ export interface EcoNode {
   };
   hestia_live?: {
     console_url?: string;
+    /** The operator's agent catalogue on the hearth: purpose, reach, limits, source and its SHA-256. */
+    catalogue_url?: string;
+    /** Agents in that catalogue, and how many of them run on the hearth with exactly that code. */
+    published?: number;
+    published_matching?: number;
     version?: string | null;
     runtime?: string | null;
     service?: string | null;
@@ -348,6 +353,10 @@ export interface EcoNode {
       public_url?: string;
       /** Whose agent it is: the hearth operator's own, or an admitted owner's (HESTIA owners). */
       owner?: { kind?: string; label?: string };
+      /** SHA-256 of the handler the hearth runs for it (the public roster's handler_sha256). */
+      handler_sha256?: string;
+      /** 'published': exactly the catalogue's source; 'differs': the catalogue has other code. */
+      code?: 'published' | 'differs';
     }[];
   };
   chat?: boolean;

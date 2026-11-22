@@ -659,7 +659,12 @@
     "no_tenants": "Aucun agent n'est encore déployé sur ce foyer.",
     "open_console": "Ouvrir la console HESTIA",
     "open_landing": "Ouvrir la page HESTIA",
-    "open_repo": "Ouvrir le dépôt HESTIA"
+    "open_repo": "Ouvrir le dépôt HESTIA",
+    "open_catalogue": "Ouvrir le catalogue des agents : code et hachages",
+    "code_published": "code = catalogue",
+    "code_differs": "code ≠ catalogue",
+    "code_title": "SHA-256 du handler exécuté par le foyer : {{sha}}",
+    "published_summary": "{{matching}} agents du catalogue sur {{published}} exécutent exactement le code publié"
   },
   "esim": {
     "role": "Opérateur eSIM · utilise le kit de l’opérateur eSIM",

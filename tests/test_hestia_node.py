@@ -302,3 +302,58 @@ class TestPolling:
                 )
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
                 assert "/invoke" not in node.value, "an /invoke URL is a paid call"
+
+
+class TestPublishedCode:
+    """The card says which running agents run exactly the source HESTIA publishes at /agents/."""
+
+    SHA_A = "a" * 64
+    SHA_B = "b" * 64
+
+    def test_the_card_links_the_catalogue(self):
+        assert hestia_status.hestia_links()["catalogue"].endswith("/agents/")
+        spec = hestia_node_spec()
+        assert spec["links"]["catalogue"].endswith("/agents/")
+
+    def test_running_code_is_matched_against_the_catalogue(self):
+        published = hestia_status._published_digests({"agents": [
+            {"slug": "same", "handler_sha256": self.SHA_A},
+            {"slug": "changed", "handler_sha256": self.SHA_A},
+            {"slug": "stopped", "handler_sha256": self.SHA_A},
+            {"slug": "bad", "handler_sha256": "not-a-digest"},
+            "junk",
+        ]})
+        assert published == {"same": self.SHA_A, "changed": self.SHA_A, "stopped": self.SHA_A}
+        facts = hestia_status._hearth_facts({"tenants": [
+            {"slug": "same", "handler_sha256": self.SHA_A, "owner": {"kind": "operator"}},
+            {"slug": "changed", "handler_sha256": self.SHA_B, "owner": {"kind": "operator"}},
+            {"slug": "theirs", "handler_sha256": self.SHA_B, "owner": {"kind": "owner", "label": "X"}},
+            {"slug": "no-digest", "owner": {"kind": "operator"}},
+        ]}, published)
+        rows = {r["slug"]: r for r in facts["tenants"]}
+        assert rows["same"]["code"] == "published"
+        assert rows["changed"]["code"] == "differs"
+        assert "code" not in rows["theirs"] and rows["theirs"]["handler_sha256"] == self.SHA_B
+        assert "code" not in rows["no-digest"] and "handler_sha256" not in rows["no-digest"]
+        assert (facts["published"], facts["published_matching"]) == (3, 1)
+
+    def test_without_the_catalogue_nothing_is_claimed(self):
+        facts = hestia_status._hearth_facts({"tenants": [{"slug": "a", "handler_sha256": self.SHA_A}]})
+        assert "code" not in facts["tenants"][0] and "published" not in facts
+
+    def test_only_a_well_formed_digest_is_carried(self):
+        facts = hestia_status._hearth_facts({"tenants": [
+            {"slug": "a", "handler_sha256": "<script>"},
+            {"slug": "b", "handler_sha256": self.SHA_A.upper()},
+        ]})
+        assert all("handler_sha256" not in r for r in facts["tenants"])
+
+    def test_the_counts_reach_the_node(self):
+        nodes = [hestia_node_spec()]
+        status = {"health": {"ok": True, "tenants": 1},
+                  "hearth": {"tenants": [{"slug": "a", "code": "published"}], "roster_size": 1,
+                             "published": 29, "published_matching": 29}}
+        hestia_status.apply_hestia_to_nodes(nodes, status)
+        live = nodes[0]["hestia_live"]
+        assert (live["published"], live["published_matching"]) == (29, 29)
+        assert live["catalogue_url"].endswith("/agents/")
