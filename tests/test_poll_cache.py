@@ -131,7 +131,7 @@ class TestEveryPollerIsCovered:
         "argus_status": ["fetch_argus_status_sync", "fetch_argus_health_sync"],
         "atlas_status": ["fetch_atlas_status_sync"],
         "basanos_status": ["fetch_basanos_status_sync"],
-        "hestia_status": ["fetch_hestia_status_sync"],
+        "hestia_status": ["fetch_hestia_status_sync", "fetch_published_digests_sync"],
         "histor_status": ["fetch_histor_status_sync"],
         "bridges_status": ["fetch_bridges_status_sync"],
         "dioscuri_status": ["fetch_dioscuri_health_sync"],
